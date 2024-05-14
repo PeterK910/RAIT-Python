@@ -21,13 +21,13 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     
     # Calculate imaginary part of v using FFT
     vf = torch.fft.fft(v)
-    vif = mt_arrange(vf)
+    vif = __mt_arrange(vf)
     vi = torch.fft.ifft(vif)
     return vi
 
 """Rearrage FFT(v) so that lots of zeros appear on the right side of the FFT"""
 
-def mt_arrange(t: torch.Tensor) -> torch.Tensor:
+def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
     mt = t.size(dim=1)
     ta = torch.zeros(t.size())
     ta[0] = t[0]
