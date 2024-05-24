@@ -38,6 +38,20 @@ def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
         ta[i] = t[i] + torch.conj(t[mt+1-i])
         ta[mt+1-i] = 0
     return ta
+"""
+Gives a better order for multiple bisection runs
 
+:param n: number of points
+:type n: int
+:returns: a 3-by-(n+1) tensor with the order of calculation
+:rtype: tensor
+"""
+def bisection_order(n: int) -> torch.Tensor:
+    if n == 1:
+        return torch.tensor([0])
+    elif n == 2:
+        return torch.tensor([1, 0])
+    else:
+        return torch.cat((bisection_order(n//2)*2, bisection_order(n//2)*2+1))
 
 
