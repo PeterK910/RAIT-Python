@@ -1,6 +1,7 @@
 import torch
 
-"""Calculates the imaginary part of v using FFT
+"""
+Calculates the imaginary part of v using FFT
 
 :param v: input tensor with real elements
 :type v: tensor
@@ -25,7 +26,9 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     vi = torch.fft.ifft(vif)
     return vi
 
-"""Rearrage FFT(v) so that lots of zeros appear on the right side of the FFT"""
+"""
+Rearrage FFT(v) so that lots of zeros appear on the right side of the FFT
+"""
 
 def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
     mt = t.size(dim=1)
@@ -35,5 +38,6 @@ def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
         ta[i] = t[i] + torch.conj(t[mt+1-i])
         ta[mt+1-i] = 0
     return ta
+
 
 
