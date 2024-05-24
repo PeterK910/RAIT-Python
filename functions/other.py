@@ -114,7 +114,7 @@ Computes complex discrete dot product of two function in H^2(ID).
 :param poles: poles of the rational system
 :type poles: ??
 :param t: arguments(s)
-:tpye t: ??
+:type t: ??
 
 :returns: values of the complex dot product of "F" and "G" at "t"
 Requires the implementation of kernel
@@ -122,6 +122,63 @@ Requires the implementation of kernel
 def dotdc(F,G,poles,t):
     pass
 
-def dotdr():
+"""
+Computes discrete real dot product of two function in H^2(ID).
+
+:param F: ID-->IR, first analytic function on the disk unit
+:type F: function
+:param G: ID-->IR, second analytic function on the disk unit
+:type G: function
+:param poles: poles of the rational system
+:type poles: ??
+:param t: arguments(s)
+:type t: ??
+
+:returns: values of the real dot product of "F" and "G" at "t"
+Requires the implementation of kernel
+"""
+def dotdr(F,G,poles,t):
     pass
+"""
+Computes the weight function of discrete dot product in H^2(D)
+TODO: check if argument types are correct
+:param y: first argument
+:type y: complex
+:param z: second argument
+:type z: complex
+:param mpoles: poles of the rational system
+:type mpoles: tensor
+
+:returns: value of the weight function at arguments "y" and "z"
+"""
+def kernel(y:complex,z:complex,mpoles: torch.Tensor):
+    n=1
+    r=0
+    m = mpoles.size(dim=0)
+    if y == z:
+        for k in range(m):
+            alpha = torch.angle(mpoles[k])
+            R = torch.abs(mpoles[k])
+            t=torch.angle(z)
+            r+=__poisson(R,t-alpha)
+    else:
+        for i in range( m):
+            r+=__MT(i-1, mpoles, y)* torch.conj(__MT(i-1, mpoles, z)) #TODO: check if this is correct
+    return r
+"""
+Compute the values of the poisson function at (r,t).
+TODO: add type hints
+"""
+def __poisson(r,t):
+    return (1-r**2)/(1-2*r*math.cos(t)+r**2)
+"""
+% Compute the values of the nth Malmquist-Takenaka function at z.
+TODO: add type hints
+"""
+def __MT(n, mpoles, z):
+    r = 1
+    for k in range(n):
+        r *= (z - mpoles[k]) / (1-torch.conj(mpoles[k])*z)
+    r *= math.sqrt(1-torch.abs(mpoles[n])**2 / (1-torch.conj(mpoles[n])*z))
+    return r
 
