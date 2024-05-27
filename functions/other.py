@@ -43,14 +43,15 @@ Gives a better order for multiple bisection runs
 
 :param n: number of points
 :type n: int
-:returns: a 3-by-(n+1) tensor with the order of calculation
+
+:returns: a 3-by-(n+1) tensor with the order of calculation, elements are integers
 :rtype: tensor
 """
 def bisection_order(n: int) -> torch.Tensor:
-    bo = torch.zeros(n+1, 3)
-    bo[0] = torch.tensor([0, -1, -1])
-    bo[1] = torch.tensor([n, -1, -1])
-    bo[2] = torch.tensor([math.floor(n/2), 0, n])
+    bo = torch.zeros((n+1, 3), dtype=torch.int32)
+    bo[0, :] = torch.tensor([0, -1, -1])
+    bo[1, :] = torch.tensor([n, -1, -1])
+    bo[2, :] = torch.tensor([n // 2, 0, n])
 
     watch = 2 # which column is currently watched
     fill = 3 # where to fill the new values

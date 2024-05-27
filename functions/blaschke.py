@@ -64,3 +64,36 @@ def blaschkes(length:int, poles:torch.Tensor) -> torch.Tensor:
         b = b * (z - pole) / (1 - torch.conj(pole) * z)
     
     return b
+
+"""
+Values of the argument function of a Blaschke product.
+
+:param a: parameters of the Blaschke product, one-dimensional tensor with complex numbers
+:type a: tensor
+:param t: values in [-pi,pi), where the function values are needed, one-dimensional tensor with floats
+:type t: tensor
+
+:returns: the values of the argument function at the points in "t", one-dimensional tensor with floats
+"""
+def arg_fun(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    if a.ndim != 1 or t.ndim != 1:
+        raise ValueError('Parameters should be 1D tensors!')
+    if torch.max(torch.abs(a)) >= 1:
+        raise ValueError('Bad poles!')
+
+    b = torch.zeros_like(t)
+    for i in range(a.size(0)):
+        b += __arg_fun_one(a[i], t)
+    b /= a.size(0)
+    return b
+"""
+calculate the argument at a given point in t
+"""
+def __arg_fun_one(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    r = torch.abs(a)
+    fi = torch.angle(a)
+    mu = (1 + r) / (1 - r)
+    gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
+    b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
+    b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    return b
