@@ -97,3 +97,14 @@ def __arg_fun_one(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
     b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi,pi)
     return b
+"""
+Same function as 'arg_fun', but it is continuous on IR. 
+TODO: types of arguments and return value (what type of numbers do the tensors contain?)
+"""
+def argdr_fun(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    b = torch.zeros(t.size())
+    for j in range(t.numel()):
+        for i in range(a.numel()):
+            bs = arg_fun(a[i], t[j])
+            b[j] += bs + 2 * torch.pi * torch.floor((t[j] + torch.pi) / (2 * torch.pi))
+    return b
