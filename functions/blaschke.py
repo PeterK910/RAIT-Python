@@ -216,7 +216,7 @@ def argdr_inv(a:torch.Tensor, b:torch.Tensor, epsi=1e-4) -> torch.Tensor:
     if len(a) == 1:
         t = __argdr_inv_one(a, b)
     else:
-        t = __arg_inv_all(a, b, epsi)
+        t = __argdr_inv_all(a, b, epsi)
     return t
 """
 Inverse when the number of poles is 1

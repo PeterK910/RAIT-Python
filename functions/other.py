@@ -45,7 +45,7 @@ Gives a better order for multiple bisection runs
 :type n: int
 
 :returns: a 3-by-(n+1) tensor with the order of calculation, elements are integers
-:rtype: tensor
+:rtype: Tensor
 """
 def bisection_order(n: int) -> torch.Tensor:
     bo = torch.zeros((n+1, 3), dtype=torch.int32)
@@ -148,7 +148,7 @@ TODO: check if argument types are correct
 :param z: second argument
 :type z: complex
 :param mpoles: poles of the rational system
-:type mpoles: tensor
+:type mpoles: Tensor
 
 :returns: value of the weight function at arguments "y" and "z"
 """
@@ -182,4 +182,15 @@ def __MT(n, mpoles, z):
         r *= (z - mpoles[k]) / (1-torch.conj(mpoles[k])*z)
     r *= math.sqrt(1-torch.abs(mpoles[n])**2 / (1-torch.conj(mpoles[n])*z))
     return r
+"""
+Returns the multiplicity of all elements of the tensor 'mpoles'.
 
+:param mpoles: poles with arbitrary multiplicities
+:type mpoles: Tensor
+
+:returns: unique elements of 'mpoles' and their multiplicities
+:rtype: tuple[Tensor, Tensor]
+"""
+def multiplicity(mpoles):
+    unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
+    return unique, counts
