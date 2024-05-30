@@ -1,4 +1,6 @@
 import torch
+import matplotlib.pyplot as plt
+from numpy import pi as PI
 import other
 """
 Derivatives of the argument function of a Blaschke product.
@@ -276,3 +278,43 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 fvk = (argdr_fun(a, torch.tensor(xa))-torch.tensor(xa/2))/a.size(0)
             x[s[i, 0]] = xa
     return x[:n]
+"""
+Shows an animation related to the inverse of an equidistant discretization by an argument function
+
+:param a: parameter of the Blaschke product, complex number
+:type a: Tensor
+:param n: number of points in the discretization
+:type n: int
+
+:returns: None
+"""
+def arg_inv_anim(a:torch.Tensor, n:int):
+    if not (a.numel() == 1 and a.dtype == torch.complex64 and type(n) == int):
+        raise ValueError('Please provide two numbers, first should be complex, second should be integer!')
+    if a.abs() >= 1:
+        raise ValueError('The parameter should be inside the unit disc!')
+
+    t = torch.linspace(-PI, PI, n+1)[:-1]  # discretization
+
+    anim = 32
+    part = 2 * PI / n / anim
+    curr = 0
+
+    plt.ion()  # Turn on interactive mode for animation
+    fig, ax = plt.subplots()
+    for i in range(anim * n): #number of frames
+        b = arg_inv(a, t + curr)
+        ax.plot(torch.cos(b).numpy(), torch.sin(b).numpy(), 'ko')
+        ax.plot(a.real, a.imag, 'ro')
+        ax.set_aspect('equal')
+        ax.set_xlim([-1.2, 1.2])
+        ax.set_ylim([-1.2, 1.2])
+        plt.draw()
+        plt.pause(0.01)
+        ax.cla()  # Clear the plot for the next frame
+
+        curr += part
+        if curr > 2 * PI / n:
+            curr -= 2 * PI / n
+
+    plt.ioff()  # Turn off interactive mode

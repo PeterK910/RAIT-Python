@@ -191,6 +191,6 @@ Returns the multiplicity of all elements of the tensor 'mpoles'.
 :returns: unique elements of 'mpoles' and their multiplicities
 :rtype: tuple[Tensor, Tensor]
 """
-def multiplicity(mpoles):
+def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
     return unique, counts
