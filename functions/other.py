@@ -1,7 +1,7 @@
 import torch
 import math
 
-from blaschke import arg_inv
+from blaschke import arg_inv, argdr_inv
 
 """
 Calculates the imaginary part of v using FFT
@@ -100,7 +100,7 @@ Computes the non-equidistant complex discretization on the unit disc that refers
 
 :param mpoles: poles of the rational system
 :type mpoles: Tensor
-:param eps: tolerance, defaults to 1e-6
+:param eps: Accuracy of the complex discretization on the unit disc, by default 1e-6.
 :type eps: float
 
 :returns: arguments of the poles
@@ -115,12 +115,37 @@ def discretize_dc(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     t = arg_inv(mpoles, z, eps)
     return t
 
-"""
-Computes the non-equidistant real discretization on the unit disc that refers to the given poles.
-Requires the implementation of argdr_inv
-"""
-def discretize_dr(mpoles, eps):
-    pass
+
+def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
+    """
+    Computes the non-equidistant real discretization on the unit disc that refers to the given poles.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles of the Blaschke product, expected to be a 1D tensor.
+    eps : float, optional
+        Accuracy of the real discretization on the unit disc, by default 1e-6.
+
+    Returns
+    -------
+    torch.Tensor
+        Non-equidistant real discretization as a 1D tensor.
+
+    Raises
+    ------
+    ValueError
+        If the poles are not inside the unit disc.
+    """
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("Poles must be inside the unit disc")
+
+    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+    m = mpoles.size(0)
+    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=m)
+    z = z / m
+    t = argdr_inv(mpoles, z, eps)
+    return t
 """
 Computes complex discrete dot product of two function in H^2(ID).  
 :param F: ID-->IC, first analytic function on the disk unit
