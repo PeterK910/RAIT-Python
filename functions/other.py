@@ -162,16 +162,16 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    y : Tensor
+    y : torch.Tensor
         First argument.
-    z : Tensor
+    z : torch.Tensor
         Second argument.
-    mpoles : Tensor
+    mpoles : torch.Tensor
         Poles of the rational system.
 
     Returns
     -------
-    Tensor
+    torch.Tensor
         Value of the weight function at arguments "y" and "z".
     """
     r = torch.zeros_like(y)
@@ -186,21 +186,49 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
         for i in range(1, m + 1):
             r += __MT(i - 1, mpoles, y) * torch.conj(__MT(i - 1, mpoles, z))
     return r
-"""
-Compute the values of the poisson function at (r,t).
-"""
+
 def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
+    """
+    Compute the values of the poisson function at (r,t).
+
+    Parameters
+    ----------
+    r : torch.Tensor
+        The radial distance.
+    t : torch.Tensor
+        The angle in radians.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated Poisson ratio.
+    """
     return (1-r**2)/(1-2*r*math.cos(t)+r**2)
-"""
-% Compute the values of the nth Malmquist-Takenaka function at z.
-TODO: add type hints
-"""
-def __MT(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+
+def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
+    """
+     Compute the values of the n-th Malmquist-Takenaka function at z.
+
+    Parameters:
+    ----------
+        n : int
+            The order of the Malmquist-Takenaka function.
+        mpoles : torch.Tensor
+            Poles of the rational system.
+        z : torch.Tensor
+            The input tensor.
+
+    Returns:
+    -------
+        torch.Tensor
+            Values of the Malmquist-Takenaka function.
+    """
     r = torch.ones_like(z)
     for k in range(n):
-        r *= (z - mpoles[k]) / (1-torch.conj(mpoles[k])*z)
-    r *= math.sqrt(1-torch.abs(mpoles[n])**2 / (1-torch.conj(mpoles[n])*z))
+        r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
+    r *= math.sqrt(1 - torch.abs(mpoles[n]) ** 2 / (1 - torch.conj(mpoles[n]) * z))
     return r
+
 """
 Returns the multiplicity of all elements of the tensor 'mpoles'.
 
