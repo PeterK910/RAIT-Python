@@ -1,6 +1,8 @@
 import torch
 import math
 
+from blaschke import arg_inv
+
 """
 Calculates the imaginary part of v using FFT
 
@@ -95,10 +97,23 @@ def coeffd_conv(poles, coeffs, base1, base2, eps):
 
 """
 Computes the non-equidistant complex discretization on the unit disc that refers to the given poles.
-Requires the implementation of arg_inv
+
+:param mpoles: poles of the rational system
+:type mpoles: Tensor
+:param eps: tolerance, defaults to 1e-6
+:type eps: float
+
+:returns: arguments of the poles
+:rtype: Tensor
 """
-def discretize_dc(mpoles, eps):
-    pass
+def discretize_dc(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("Poles must be inside the unit disc")
+
+    m = mpoles.numel()
+    z = torch.linspace(-torch.pi, torch.pi, m+1)
+    t = arg_inv(mpoles, z, eps)
+    return t
 
 """
 Computes the non-equidistant real discretization on the unit disc that refers to the given poles.
@@ -140,44 +155,48 @@ Requires the implementation of kernel
 """
 def dotdr(F,G,poles,t):
     pass
-"""
-Computes the weight function of discrete dot product in H^2(D)
-TODO: check if argument types are correct
-:param y: first argument
-:type y: complex
-:param z: second argument
-:type z: complex
-:param mpoles: poles of the rational system
-:type mpoles: Tensor
 
-:returns: value of the weight function at arguments "y" and "z"
-"""
-def kernel(y:complex,z:complex,mpoles: torch.Tensor):
-    n=1
-    r=0
-    m = mpoles.size(dim=0)
+def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
+    """
+    Computes the weight function of discrete dot product in H^2(D).
+
+    Parameters
+    ----------
+    y : Tensor
+        First argument.
+    z : Tensor
+        Second argument.
+    mpoles : Tensor
+        Poles of the rational system.
+
+    Returns
+    -------
+    Tensor
+        Value of the weight function at arguments "y" and "z".
+    """
+    r = torch.zeros_like(y)
+    m = len(mpoles)
     if y == z:
         for k in range(m):
             alpha = torch.angle(mpoles[k])
             R = torch.abs(mpoles[k])
-            t=torch.angle(z)
-            r+=__poisson(R,t-alpha)
+            t = torch.angle(z)
+            r += __poisson(R, t - alpha)
     else:
-        for i in range( m):
-            r+=__MT(i-1, mpoles, y)* torch.conj(__MT(i-1, mpoles, z)) #TODO: check if this is correct
+        for i in range(1, m + 1):
+            r += __MT(i - 1, mpoles, y) * torch.conj(__MT(i - 1, mpoles, z))
     return r
 """
 Compute the values of the poisson function at (r,t).
-TODO: add type hints
 """
-def __poisson(r,t):
+def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
     return (1-r**2)/(1-2*r*math.cos(t)+r**2)
 """
 % Compute the values of the nth Malmquist-Takenaka function at z.
 TODO: add type hints
 """
-def __MT(n, mpoles, z):
-    r = 1
+def __MT(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+    r = torch.ones_like(z)
     for k in range(n):
         r *= (z - mpoles[k]) / (1-torch.conj(mpoles[k])*z)
     r *= math.sqrt(1-torch.abs(mpoles[n])**2 / (1-torch.conj(mpoles[n])*z))
