@@ -1,7 +1,7 @@
 import torch
 from math import factorial
 from scipy.special import binom
-from other import multiplicity
+from other import multiplicity, discretize_dc
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -188,3 +188,42 @@ def __ro(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -
 
     v *= (-1) ** s * factorial(s)
     return v
+
+
+def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
+    """
+    Generates the discrete biorthogonal system.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles of the discrete biorthogonal system.
+    eps : float, optional
+        Accuracy of the discretization on the unit disc (default is 1e-6).
+
+    Returns
+    -------
+    torch.Tensor
+        The elements of the discrete biorthogonal system at the uniform
+        sampling points as row vectors.
+
+    Raises
+    ------
+    ValueError
+        If the poles are not inside the unit circle.
+    """
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+    
+    m = mpoles.numel()
+    bts = torch.zeros(m, m+1, dtype=mpoles.dtype)
+    t = discretize_dc(mpoles, eps)
+
+    spoles, multi = multiplicity(mpoles)
+
+    for j in range(len(multi)):
+        for k in range(1, multi[j]+1):
+            col = sum(multi[:j]) + k
+            bts[col-1, :] = __pszi(j+1, k, spoles, multi, torch.exp(1j * t))
+
+    return bts

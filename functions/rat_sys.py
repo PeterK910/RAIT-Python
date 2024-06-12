@@ -1,5 +1,5 @@
 import torch
-from other import multiplicity
+from other import multiplicity, discretize_dc
 
 def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
     """
@@ -107,3 +107,42 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
         if v[k] == v[n]:
             m += 1
     return m
+
+def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
+    """
+    Generates the discrete modified basic rational system.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles of the discrete modified basic rational system.
+    eps : float, optional
+        Accuracy of the discretization on the unit disc (default is 1e-6).
+
+    Returns
+    -------
+    torch.Tensor
+        The elements of the discrete modified basic rational system at the
+        uniform sampling points as row vectors.
+
+    Raises
+    ------
+    ValueError
+        If the poles are not inside the unit disc.
+    """
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("Poles must be inside the unit disc")
+
+    m = mpoles.numel()
+    mlf = torch.zeros(m, m+1, dtype=mpoles.dtype)
+    t = discretize_dc(mpoles, eps)
+
+    spoles, multi = multiplicity(mpoles)
+
+    for j in range(len(multi)):
+        for k in range(1, multi[j]+1):
+            col = sum(multi[:j]) + k
+            mlf[col-1, :] = torch.exp(1j * t) ** (k-1) / (1 - spoles[j].conj() * torch.exp(1j * t)) ** k
+
+    return mlf
+

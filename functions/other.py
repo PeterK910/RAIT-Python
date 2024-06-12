@@ -1,5 +1,6 @@
 import torch
 import math
+from typing import Callable
 
 from blaschke import arg_inv, argdr_inv
 
@@ -146,22 +147,41 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t
-"""
-Computes complex discrete dot product of two function in H^2(ID).  
-:param F: ID-->IC, first analytic function on the disk unit
-:type F: function
-:param G: ID-->IC, second analytic function on the disk unit
-:type G: function
-:param poles: poles of the rational system
-:type poles: ??
-:param t: arguments(s)
-:type t: ??
+import torch
 
-:returns: values of the complex dot product of "F" and "G" at "t"
-Requires the implementation of kernel
-"""
-def dotdc(F,G,poles,t):
-    pass
+def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], poles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    """
+    Computes complex discrete dot product of two functions in H^2(ID).
+
+    Parameters
+    ----------
+    F : callable
+        Analytic function on the unit disk, returning torch.Tensor.
+    G : callable
+        Analytic function on the unit disk, returning torch.Tensor.
+    poles : torch.Tensor
+        Poles of the rational system.
+    t : torch.Tensor
+        The arguments at which to evaluate the dot product.
+
+    Returns
+    -------
+    torch.Tensor
+        Values of the complex dot product of 'F' and 'G' at 't'.
+    """
+    if not callable(F) or not callable(G):
+        raise TypeError("F and G must be callable functions returning torch.Tensor.")
+    if not isinstance(poles, torch.Tensor):
+        raise TypeError("poles must be a torch.Tensor.")
+    if not isinstance(t, torch.Tensor):
+        raise TypeError("t must be a torch.Tensor.")
+
+    # Assuming kernel function is defined elsewhere
+    s = torch.sum(F(t[:-1]) * torch.conj(G(t[:-1])) / kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles))
+    return s
+
+# The function 'kernel' should be defined here.
+
 
 """
 Computes discrete real dot product of two function in H^2(ID).
