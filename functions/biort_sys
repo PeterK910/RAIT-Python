@@ -1,0 +1,190 @@
+import torch
+from math import factorial
+from scipy.special import binom
+from other import multiplicity
+
+def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
+    """
+    Generates the biorthogonal system.
+
+    The following functions and notations are used from:
+
+    S. Fridli, F. Schipp, Biorthogonal systems to rational functions, 
+    Annales Univ. Sci. Budapest., Sect. Comp, vol. 35, no. 1, 
+    pp. 95-105, 2011.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    mpoles : torch.Tensor
+        Poles of the biorthogonal system.
+
+    Returns
+    -------
+    torch.Tensor
+        The elements of the biorthogonal system at the uniform sampling points as row vectors.
+    
+    Raises
+    ------
+    ValueError
+        If the number of poles is not 1 or the length is less than 2.
+        Also, if the poles are not inside the unit circle.
+    """
+    np, mp = mpoles.size()
+    if np != 1 or length < 2:
+        raise ValueError('Wrong parameters!')
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+
+    bts = torch.zeros((mp, length), dtype=torch.cfloat)
+    t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
+    z = torch.exp(1j * t)
+
+    spoles, multi = multiplicity(mpoles)
+
+    for j in range(len(multi)):
+        for k in range(1, multi[j] + 1):
+            col = sum(multi[:j]) + k
+            bts[col - 1, :] = __pszi(j, k, spoles, multi, z)
+
+    return bts
+
+def __pszi(l:int, j:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+    """
+    Compute the values of the biorthogonal polynomial at z related to the lth
+    pole with j multiplicity.
+
+    Parameters
+    ----------
+    l : int
+        The index of the pole.
+    j : int
+        The multiplicity of the pole.
+    poles : torch.Tensor
+        The poles of the biorthogonal system.
+    multi : torch.Tensor
+        The multiplicity of each pole.
+    z : torch.Tensor
+        The complex plane values where the function is evaluated.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated values of the biorthogonal polynomial.
+    """
+    n = len(poles)
+    v = torch.zeros(z.size(), dtype=torch.cfloat)
+    do = __domega(int(multi[l]) - j, l, poles, multi, poles[l])
+
+    for s in range(multi[l] - j + 1):
+        v += do[s] / factorial(s) * (z - poles[l]) ** s
+
+    v *= __omega(l, poles, multi, z) / __omega(l, poles, multi, poles[l]) * (z - poles[l]) ** (j - 1)
+    return v
+
+def __omega(l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+    """
+    Computes the values of the Omega base functions related to the
+    biorthogonal system.
+
+    Parameters
+    ----------
+    l : int
+        The index of the pole.
+    poles : torch.Tensor
+        The poles of the biorthogonal system.
+    multi : torch.Tensor
+        The multiplicity of each pole.
+    z : torch.Tensor
+        The complex plane values where the function is evaluated.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated values of the Omega base functions.
+    """
+    n = len(poles)
+    v = torch.ones(z.size(), dtype=torch.cfloat)
+    v /= (1 - poles[l].conj() * z) ** multi[l]
+
+    # Blaschke-function
+    def B(z, a):
+        return (z - a) / (1 - a.conj() * z)
+
+    for i in range(l):
+        v *= B(z, poles[i]) ** multi[i]
+    for i in range(l + 1, n):
+        v *= B(z, poles[i]) ** multi[i]
+
+    return v
+
+def __domega(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+    """
+    Computes sth derivative of the omega function.
+
+    The first row of array 'Do' contains the values of omega.
+
+    The rth derivative is stored in Do(r+1,:). 
+
+    Parameters
+    ----------
+    s : int
+        The order of the derivative.
+    l : int
+        The index of the pole.
+    poles : torch.Tensor
+        The poles of the biorthogonal system.
+    multi : torch.Tensor
+        The multiplicity of each pole.
+    z : torch.Tensor
+        The complex plane values where the function is evaluated.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated values of the sth derivative of the omega function.
+    """
+    n = len(poles)
+    Do = torch.zeros((s + 1, len(z)), dtype=torch.cfloat)
+    Do[0, :] = __omega(l, poles, multi, poles[l]) / __omega(l, poles, multi, z)
+
+    for i in range(1, s + 1):
+        for j in range(1, i + 1):
+            Do[i, :] += binom(i - 1, j - 1) * Do[j - 1, :] * __ro(i - j, l, poles, multi, z)
+
+    return Do
+
+def __ro(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
+    """
+    Computes sth derivative of the auxiliary function to Domega.
+
+    Parameters
+    ----------
+    s : int
+        The order of the derivative.
+    l : int
+        The index of the pole.
+    poles : torch.Tensor
+        The poles of the biorthogonal system.
+    multi : torch.Tensor
+        The multiplicity of each pole.
+    z : torch.Tensor
+        The complex plane values where the function is evaluated.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated values of the sth derivative of the auxiliary function.
+    """
+    n = len(multi)
+    v = torch.ones(z.size(), dtype=torch.cfloat)
+    v *= multi[l] / (z - (1 / poles[l].conj())) ** (s + 1)
+
+    for i in range(l):
+        v -= multi[i] * ((1 / (z - poles[i])) ** (s + 1) - (1 / (z - (1 / poles[i].conj()))) ** (s + 1))
+    for i in range(l, n):
+        v -= multi[i] * ((1 / (z - poles[i])) ** (s + 1) - (1 / (z - (1 / poles[i].conj()))) ** (s + 1))
+
+    v *= (-1) ** s * factorial(s)
+    return v
