@@ -1,5 +1,8 @@
 import torch
 import math
+from typing import Callable
+
+from blaschke import arg_inv, argdr_inv
 
 """
 Calculates the imaginary part of v using FFT
@@ -45,7 +48,7 @@ Gives a better order for multiple bisection runs
 :type n: int
 
 :returns: a 3-by-(n+1) tensor with the order of calculation, elements are integers
-:rtype: tensor
+:rtype: Tensor
 """
 def bisection_order(n: int) -> torch.Tensor:
     bo = torch.zeros((n+1, 3), dtype=torch.int32)
@@ -95,91 +98,261 @@ def coeffd_conv(poles, coeffs, base1, base2, eps):
 
 """
 Computes the non-equidistant complex discretization on the unit disc that refers to the given poles.
-Requires the implementation of arg_inv
-"""
-def discretize_dc(mpoles, eps):
-    pass
 
-"""
-Computes the non-equidistant real discretization on the unit disc that refers to the given poles.
-Requires the implementation of argdr_inv
-"""
-def discretize_dr(mpoles, eps):
-    pass
-"""
-Computes complex discrete dot product of two function in H^2(ID).  
-:param F: ID-->IC, first analytic function on the disk unit
-:type F: function
-:param G: ID-->IC, second analytic function on the disk unit
-:type G: function
-:param poles: poles of the rational system
-:type poles: ??
-:param t: arguments(s)
-:type t: ??
-
-:returns: values of the complex dot product of "F" and "G" at "t"
-Requires the implementation of kernel
-"""
-def dotdc(F,G,poles,t):
-    pass
-
-"""
-Computes discrete real dot product of two function in H^2(ID).
-
-:param F: ID-->IR, first analytic function on the disk unit
-:type F: function
-:param G: ID-->IR, second analytic function on the disk unit
-:type G: function
-:param poles: poles of the rational system
-:type poles: ??
-:param t: arguments(s)
-:type t: ??
-
-:returns: values of the real dot product of "F" and "G" at "t"
-Requires the implementation of kernel
-"""
-def dotdr(F,G,poles,t):
-    pass
-"""
-Computes the weight function of discrete dot product in H^2(D)
-TODO: check if argument types are correct
-:param y: first argument
-:type y: complex
-:param z: second argument
-:type z: complex
 :param mpoles: poles of the rational system
-:type mpoles: tensor
+:type mpoles: Tensor
+:param eps: Accuracy of the complex discretization on the unit disc, by default 1e-6.
+:type eps: float
 
-:returns: value of the weight function at arguments "y" and "z"
+:returns: arguments of the poles
+:rtype: Tensor
 """
-def kernel(y:complex,z:complex,mpoles: torch.Tensor):
-    n=1
-    r=0
-    m = mpoles.size(dim=0)
+def discretize_dc(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("Poles must be inside the unit disc")
+
+    m = mpoles.numel()
+    z = torch.linspace(-torch.pi, torch.pi, m+1)
+    t = arg_inv(mpoles, z, eps)
+    return t
+
+
+def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
+    """
+    Computes the non-equidistant real discretization on the unit disc that refers to the given poles.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles of the Blaschke product, expected to be a 1D tensor.
+    eps : float, optional
+        Accuracy of the real discretization on the unit disc, by default 1e-6.
+
+    Returns
+    -------
+    torch.Tensor
+        Non-equidistant real discretization as a 1D tensor.
+
+    Raises
+    ------
+    ValueError
+        If the poles are not inside the unit disc.
+    """
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("Poles must be inside the unit disc")
+
+    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+    m = mpoles.size(0)
+    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=m)
+    z = z / m
+    t = argdr_inv(mpoles, z, eps)
+    return t
+import torch
+
+def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], poles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    """
+    Computes complex discrete dot product of two functions in H^2(ID).
+
+    Parameters
+    ----------
+    F : callable
+        Analytic function on the unit disk, returning torch.Tensor.
+    G : callable
+        Analytic function on the unit disk, returning torch.Tensor.
+    poles : torch.Tensor
+        Poles of the rational system.
+    t : torch.Tensor
+        The arguments at which to evaluate the dot product.
+
+    Returns
+    -------
+    torch.Tensor
+        Values of the complex dot product of 'F' and 'G' at 't'.
+    """
+    if not callable(F) or not callable(G):
+        raise TypeError("F and G must be callable functions returning torch.Tensor.")
+    if not isinstance(poles, torch.Tensor):
+        raise TypeError("poles must be a torch.Tensor.")
+    if not isinstance(t, torch.Tensor):
+        raise TypeError("t must be a torch.Tensor.")
+
+    # Assuming kernel function is defined elsewhere
+    s = torch.sum(F(t[:-1]) * torch.conj(G(t[:-1])) / kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles))
+    return s
+
+import torch
+
+def dotdr(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], mpoles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    """
+    TODO: correct dotdr function
+    Compute the values of the discrete real dot product of two functions in H^2(ID).
+
+    Parameters
+    ----------
+    F : callable
+        Analytic function on the unit disk.
+    G : callable
+        Analytic function on the unit disk.
+    mpoles : torch.Tensor
+        Poles of the rational system.
+    t : torch.Tensor
+        The angle in radians.
+
+    Returns
+    -------
+    torch.Tensor
+        The values of the real dot product of 'F' and 'G' at 't'.
+    """
+    # Validate input parameters
+    if not callable(F) or not callable(G):
+        raise TypeError("F and G must be callable functions returning torch.Tensor.")
+    if not isinstance(mpoles, torch.Tensor) or mpoles.dim() != 1:
+        raise TypeError("mpoles must be a 1D torch.Tensor.")
+    if not isinstance(t, torch.Tensor) or t.dim() != 1:
+        raise TypeError("t must be a 1D torch.Tensor.")
+
+    # Prepend 0 to mpoles as per MATLAB code
+    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+   
+    # Compute the discrete real dot product
+    s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles)) - 1))
+
+    return s
+
+
+
+
+def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
+    """
+    Computes the weight function of discrete dot product in H^2(D).
+
+    Parameters
+    ----------
+    y : torch.Tensor
+        First argument.
+    z : torch.Tensor
+        Second argument.
+    mpoles : torch.Tensor
+        Poles of the rational system.
+
+    Returns
+    -------
+    torch.Tensor
+        Value of the weight function at arguments "y" and "z".
+    """
+    r = torch.zeros_like(y)
+    m = len(mpoles)
     if y == z:
         for k in range(m):
             alpha = torch.angle(mpoles[k])
             R = torch.abs(mpoles[k])
-            t=torch.angle(z)
-            r+=__poisson(R,t-alpha)
+            t = torch.angle(z)
+            r += __poisson(R, t - alpha)
     else:
-        for i in range( m):
-            r+=__MT(i-1, mpoles, y)* torch.conj(__MT(i-1, mpoles, z)) #TODO: check if this is correct
-    return r
-"""
-Compute the values of the poisson function at (r,t).
-TODO: add type hints
-"""
-def __poisson(r,t):
-    return (1-r**2)/(1-2*r*math.cos(t)+r**2)
-"""
-% Compute the values of the nth Malmquist-Takenaka function at z.
-TODO: add type hints
-"""
-def __MT(n, mpoles, z):
-    r = 1
-    for k in range(n):
-        r *= (z - mpoles[k]) / (1-torch.conj(mpoles[k])*z)
-    r *= math.sqrt(1-torch.abs(mpoles[n])**2 / (1-torch.conj(mpoles[n])*z))
+        for i in range(1, m + 1):
+            r += __MT(i - 1, mpoles, y) * torch.conj(__MT(i - 1, mpoles, z))
     return r
 
+def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
+    """
+    Compute the values of the poisson function at (r,t).
+
+    Parameters
+    ----------
+    r : torch.Tensor
+        The radial distance.
+    t : torch.Tensor
+        The angle in radians.
+
+    Returns
+    -------
+    torch.Tensor
+        The calculated Poisson ratio.
+    """
+    return (1-r**2)/(1-2*r*math.cos(t)+r**2)
+
+def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
+    """
+     Compute the values of the n-th Malmquist-Takenaka function at z.
+
+    Parameters:
+    ----------
+        n : int
+            The order of the Malmquist-Takenaka function.
+        mpoles : torch.Tensor
+            Poles of the rational system.
+        z : torch.Tensor
+            The input tensor.
+
+    Returns:
+    -------
+        torch.Tensor
+            Values of the Malmquist-Takenaka function.
+    """
+    r = torch.ones_like(z)
+    for k in range(n):
+        r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
+    r *= math.sqrt(1 - torch.abs(mpoles[n]) ** 2 / (1 - torch.conj(mpoles[n]) * z))
+    return r
+
+"""
+Returns the multiplicity of all elements of the tensor 'mpoles'.
+
+:param mpoles: poles with arbitrary multiplicities
+:type mpoles: Tensor
+
+:returns: unique elements of 'mpoles' and their multiplicities
+:rtype: tuple[Tensor, Tensor]
+"""
+def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
+    return unique, counts
+
+def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
+    """
+    TODO: check if interpolation without numpy is correct here
+    Interpolate values between uniform sampling points using linear interpolation.
+
+    Parameters
+    ----------
+    sample : torch.Tensor
+        A 1D tensor of uniformly sampled values on [-pi, pi).
+    x : torch.Tensor
+        The values at which interpolation is to be computed.
+
+    Returns
+    -------
+    torch.Tensor
+        The interpolated values at the points specified by x.
+    """
+
+    # Validate input types
+    if not isinstance(sample, torch.Tensor):
+        raise TypeError("sample must be a torch.Tensor")
+    if not isinstance(x, torch.Tensor):
+        raise TypeError("x must be a torch.Tensor")
+
+    # Validate input dimensions
+    if sample.dim() != 1:
+        raise ValueError("sample must be a 1D tensor")
+    if x.dim() != 1:
+        raise ValueError("x must be a 1D tensor")
+
+    # Number of samples
+    len = sample.size(0)
+
+    # Create a tensor of sample points
+    sx = torch.linspace(-torch.pi, torch.pi, len)
+
+    # Reshape x to (N, 1, 1) and sx to (1, len, 1) for broadcasting
+    x_reshaped = x.view(-1, 1, 1)
+    sx_reshaped = sx.view(1, -1, 1)
+
+    # Compute the ratio for interpolation
+    ratio = (x_reshaped - sx_reshaped) / (2 * torch.pi / len)
+
+    # Use torch.nn.functional.interpolate for interpolation
+    y = torch.nn.functional.interpolate(sample.view(1, 1, -1), scale_factor=ratio, mode='linear', align_corners=True)
+
+    # Squeeze to remove extra dimensions
+    return y.squeeze()
