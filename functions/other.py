@@ -180,26 +180,47 @@ def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],tor
     s = torch.sum(F(t[:-1]) * torch.conj(G(t[:-1])) / kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles))
     return s
 
-# The function 'kernel' should be defined here.
+import torch
+
+def dotdr(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], mpoles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+    """
+    TODO: correct dotdr function
+    Compute the values of the discrete real dot product of two functions in H^2(ID).
+
+    Parameters
+    ----------
+    F : callable
+        Analytic function on the unit disk.
+    G : callable
+        Analytic function on the unit disk.
+    mpoles : torch.Tensor
+        Poles of the rational system.
+    t : torch.Tensor
+        The angle in radians.
+
+    Returns
+    -------
+    torch.Tensor
+        The values of the real dot product of 'F' and 'G' at 't'.
+    """
+    # Validate input parameters
+    if not callable(F) or not callable(G):
+        raise TypeError("F and G must be callable functions returning torch.Tensor.")
+    if not isinstance(mpoles, torch.Tensor) or mpoles.dim() != 1:
+        raise TypeError("mpoles must be a 1D torch.Tensor.")
+    if not isinstance(t, torch.Tensor) or t.dim() != 1:
+        raise TypeError("t must be a 1D torch.Tensor.")
+
+    # Prepend 0 to mpoles as per MATLAB code
+    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+   
+    # Compute the discrete real dot product
+    s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles)) - 1))
+
+    return s
 
 
-"""
-Computes discrete real dot product of two function in H^2(ID).
 
-:param F: ID-->IR, first analytic function on the disk unit
-:type F: function
-:param G: ID-->IR, second analytic function on the disk unit
-:type G: function
-:param poles: poles of the rational system
-:type poles: ??
-:param t: arguments(s)
-:type t: ??
-
-:returns: values of the real dot product of "F" and "G" at "t"
-Requires the implementation of kernel
-"""
-def dotdr(F,G,poles,t):
-    pass
 
 def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     """
@@ -286,3 +307,52 @@ Returns the multiplicity of all elements of the tensor 'mpoles'.
 def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
     return unique, counts
+
+def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
+    """
+    TODO: check if interpolation without numpy is correct here
+    Interpolate values between uniform sampling points using linear interpolation.
+
+    Parameters
+    ----------
+    sample : torch.Tensor
+        A 1D tensor of uniformly sampled values on [-pi, pi).
+    x : torch.Tensor
+        The values at which interpolation is to be computed.
+
+    Returns
+    -------
+    torch.Tensor
+        The interpolated values at the points specified by x.
+    """
+
+    # Validate input types
+    if not isinstance(sample, torch.Tensor):
+        raise TypeError("sample must be a torch.Tensor")
+    if not isinstance(x, torch.Tensor):
+        raise TypeError("x must be a torch.Tensor")
+
+    # Validate input dimensions
+    if sample.dim() != 1:
+        raise ValueError("sample must be a 1D tensor")
+    if x.dim() != 1:
+        raise ValueError("x must be a 1D tensor")
+
+    # Number of samples
+    len = sample.size(0)
+
+    # Create a tensor of sample points
+    sx = torch.linspace(-torch.pi, torch.pi, len)
+
+    # Reshape x to (N, 1, 1) and sx to (1, len, 1) for broadcasting
+    x_reshaped = x.view(-1, 1, 1)
+    sx_reshaped = sx.view(1, -1, 1)
+
+    # Compute the ratio for interpolation
+    ratio = (x_reshaped - sx_reshaped) / (2 * torch.pi / len)
+
+    # Use torch.nn.functional.interpolate for interpolation
+    y = torch.nn.functional.interpolate(sample.view(1, 1, -1), scale_factor=ratio, mode='linear', align_corners=True)
+
+    # Squeeze to remove extra dimensions
+    return y.squeeze()

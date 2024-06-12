@@ -102,3 +102,67 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
         r *= (z - mpoles[k-1]) / (1 - mpoles[k-1].conj() * z)
     r *= torch.sqrt(1 - torch.abs(mpoles[n])**2) / (1 - mpoles[n].conj() * z)
     return r
+
+def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.Tensor) -> torch.Tensor:
+    """
+    Generates a function in the space spanned by the discrete real MT system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    mpoles : torch.Tensor
+        Poles of the discrete real MT system (row vector).
+    cUk : torch.Tensor
+        Coefficients of the linear combination to form (row vector)
+        with respect to the real part of the discrete real MT system
+        defined by 'mpoles'.
+    cVk : torch.Tensor
+        Coefficients of the linear combination to form (row vector)
+        with respect to the imaginary part of the discrete real MT 
+        system defined by 'mpoles'.
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a row vector.
+
+        It is the linear combination of the discrete real MT system elements.
+
+        mtdr1  mtdr1  mtdr1 ... mtdr1
+
+        mtdr2  mtdr2  mtdr2 ... mtdr2
+
+        co1 co2  v      v      v         v
+
+    Raises
+    ------
+    ValueError
+        If 'length' is not an integer greater than or equal to 2.
+
+        If 'mpoles' values are greater than or equal to 1.
+    """
+    # Validate input parameters
+    if not isinstance(length, int) or length < 2:
+        raise ValueError("length must be an integer greater than or equal to 2.")
+    if not isinstance(mpoles, torch.Tensor) or mpoles.dim() != 1:
+        raise TypeError("mpoles must be a 1D torch.Tensor.")
+    if not isinstance(cUk, torch.Tensor) or cUk.dim() != 1 or cUk.size(0) != mpoles.size(0):
+        raise TypeError("cUk must be a 1D torch.Tensor with the same size as mpoles.")
+    if not isinstance(cVk, torch.Tensor) or cVk.dim() != 1 or cVk.size(0) != mpoles.size(0):
+        raise TypeError("cVk must be a 1D torch.Tensor with the same size as mpoles.")
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError("mpoles contains values greater than or equal to 1.")
+
+    # Prepend 0 to mpoles as per MATLAB code
+    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+
+    # Generate the MT system elements
+    mts = mt_system(length, mpoles)
+
+    # Calculate the generated function
+    SRf = cUk[0] * mts[:, 0]
+    for i in range(1, mpoles.size(0)):
+        SRf += 2 * cUk[i] * torch.real(mts[:, i]) + 2 * cVk[i] * torch.imag(mts[:, i])
+
+    return SRf
