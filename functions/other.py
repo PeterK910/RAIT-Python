@@ -176,7 +176,6 @@ def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],tor
     if not isinstance(t, torch.Tensor):
         raise TypeError("t must be a torch.Tensor.")
 
-    # Assuming kernel function is defined elsewhere
     s = torch.sum(F(t[:-1]) * torch.conj(G(t[:-1])) / kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles))
     return s
 
@@ -184,7 +183,6 @@ import torch
 
 def dotdr(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], mpoles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
     """
-    TODO: correct dotdr function
     Compute the values of the discrete real dot product of two functions in H^2(ID).
 
     Parameters
@@ -215,7 +213,7 @@ def dotdr(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],tor
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
    
     # Compute the discrete real dot product
-    s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles)) - 1))
+    s = torch.sum(F(t) * torch.conj(G(t)) / (2 * torch.real(kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles)) - 1))
 
     return s
 

@@ -1,5 +1,5 @@
 import torch
-from other import discretize_dc
+from other import discretize_dc, discretize_dr
 """
 Generates the Malmquist-Takenaka system.
 
@@ -166,3 +166,42 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
         SRf += 2 * cUk[i] * torch.real(mts[:, i]) + 2 * cVk[i] * torch.imag(mts[:, i])
 
     return SRf
+
+def mtdr_system(poles, eps=1e-6):
+    """
+    Generates the discrete real MT system.
+
+    Parameters
+    ----------
+    poles : torch.Tensor
+        Poles of the discrete real MT system.
+    eps : float, optional
+        Accuracy of the real discretization on the unit disc (default is 1e-6).
+
+    Returns
+    -------
+    mts_re : torch.Tensor
+        The real part of the discrete complex MT system at the non-equidistant discretization on the unit disc.
+    mts_im : torch.Tensor
+        The imaginary part of the discrete complex MT system at the non-equidistant discretization on the unit disc.
+
+    Raises
+    ------
+    ValueError
+        If any of the poles have a magnitude greater than or equal to 1.
+    """
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Bad poles! Poles must have magnitudes less than 1.')
+
+    mpoles = torch.cat((torch.zeros(1), poles))
+    m = mpoles.size(0)
+    t = discretize_dr(poles, eps)
+    mts_re = torch.zeros(m, t.size(0), dtype=torch.complex64)
+    mts_im = torch.zeros(m, t.size(0), dtype=torch.complex64)
+
+    for j in range(m):
+        mt_values = __mt(j - 1, mpoles, torch.exp(1j * t))
+        mts_re[j, :] = mt_values.real
+        mts_im[j, :] = mt_values.imag
+
+    return mts_re, mts_im
