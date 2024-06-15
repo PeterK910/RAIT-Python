@@ -134,7 +134,7 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
     +-------+-------+-------+-------+-------+-------+-------+
     |       |       | mtdr1 | mtdr1 | mtdr1 | ...   | mtdr1 |
     |       |       | mtdr2 | mtdr2 | mtdr2 | ...   | mtdr2 |
-    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    | co1   | co2   |  SRf  |  SRf  |  SRf  | ...   |  SRf  |
     +-------+-------+-------+-------+-------+-------+-------+
 
 

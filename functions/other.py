@@ -3,7 +3,9 @@ import math
 from typing import Callable
 
 from blaschke import arg_inv, argdr_inv
-
+from mt_sys import mt_system
+from biort_sys import biort_system
+from rat_sys import lf_system, mlf_system
 """
 Calculates the imaginary part of v using FFT
 
@@ -83,12 +85,7 @@ def bisection_order(n: int) -> torch.Tensor:
         watch += 1
     return bo
 
-"""
-Converts the coefficients coeffs between the continuous systems base1 and base2
-Requires the implementation of lf_system, mlf_system, biort_system, and mt_system
-"""
-def coeff_conv(len:int, poles, coeffs, base1, base2):
-    pass
+
 """
 Converts the coefficients coeffs between the discrete systems base1 and base2.
 Requires the implementation of mlfdc_system, biortdc_system, and mtdc_system
@@ -155,7 +152,7 @@ def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],tor
 
     Parameters
     ----------
-    F : callable
+    F : callable (Dcomplex unit disk (without edge)->Ccomplex)
         Analytic function on the unit disk, returning torch.Tensor.
     G : callable
         Analytic function on the unit disk, returning torch.Tensor.
@@ -354,3 +351,68 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 
     # Squeeze to remove extra dimensions
     return y.squeeze()
+
+def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
+    """
+    Convert the coefficients between the continuous systems base1 and base2.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    poles : torch.Tensor
+        Poles of the continuous systems.
+    coeffs : torch.Tensor
+        Coefficients with respect to the continuous system 'base1'.
+    base1 : str
+        Type of the continuous system to be converted.
+    base2 : str
+        Type of the converted continuous system.
+
+    Returns
+    -------
+    torch.Tensor
+        Converted coefficients with respect to the system 'base2'.
+    
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    
+    # Validate input parameters
+    if poles.size(0) != 1:
+        raise ValueError("poles must be a 1D tensor")
+    if length < 2:
+        raise ValueError("length must be an integer greater than or equal to 2.")
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+    
+    if coeffs.size(0) != 1:
+        raise ValueError('Coeffs should be row vector!')
+    
+    # Helper function
+    def get_system(base, length, poles):
+        if base == 'lf':
+            return lf_system(length, poles)
+        elif base == 'mlf':
+            return mlf_system(length, poles)
+        elif base == 'biort':
+            return biort_system(length, poles)
+        elif base == 'mt':
+            return mt_system(length, poles)
+        else:
+            raise ValueError('Invalid system type! Choose from lf, mlf, biort, mt.')
+
+    # Get systems for base1 and base2
+    g1 = get_system(base1, length, poles)
+    g2 = get_system(base2, length, poles)
+    #TODO: check if the lines below are correct
+    # Perform matrix operations
+    F = g1.mm(g1.t()) / length
+    G = g1.mm(g2.t()) / length
+    
+    # Solve linear system and return converted coefficients
+    co = torch.linalg.solve(G, F.mm(coeffs.t())).t()
+    
+    return co
