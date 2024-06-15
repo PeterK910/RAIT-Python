@@ -2,6 +2,7 @@ import torch
 from math import factorial
 from scipy.special import binom
 from other import multiplicity, discretize_dc
+from rat_sys import mlf_system
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -227,3 +228,106 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
             bts[col-1, :] = __pszi(j+1, k, spoles, multi, torch.exp(1j * t))
 
     return bts
+
+
+
+def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float]:
+    """
+    Calculate the biorthogonal-coefficients of 'v' with respect to the 
+    biorthogonal system given by 'poles'.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        An arbitrary vector.
+    poles : torch.Tensor
+        Poles of the biorthogonal system.
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of v with respect to the biorthogonal 
+        system defined by poles.
+    float
+        L^2 norm of the approximation error.
+    
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    
+    # Validate input parameters
+    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+        raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+    
+    # Calculate the biorthogonal system elements
+    mlfs = mlf_system(v.size(0), poles)
+    bts = biort_system(v.size(0), poles)
+    
+    # Calculate coefficients and error
+    co = (mlfs @ v.unsqueeze(1) / v.size(0)).squeeze()
+    err = torch.linalg.norm(co @ bts - v).item()
+    
+    return co, err
+
+def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+    """
+    Generates a function in the space spanned by the biorthogonal system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    poles : torch.Tensor
+        Poles of the biorthogonal system (row vector).
+    coeffs : torch.Tensor
+        Coefficients of the linear combination to form (row vector).
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a row vector.
+    
+        It is the linear combination of the LF system elements.
+        
+    Table
+    -----
+    +-------+-------+-------+-------+-------+-------+-------+
+    |       |       |  bt1  |  bt1  |  bt1  | ...   |  bt1  |
+    |       |       |  bt2  |  bt2  |  bt2  | ...   |  bt2  |
+    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    +-------+-------+-------+-------+-------+-------+-------+
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    
+    if not isinstance(length, int) or length < 2:
+        raise ValueError("Length must be an integer greater than or equal to 2.")
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError("Poles must be a 1-dimensional torch.Tensor.")
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError("Coeffs must be a 1-dimensional torch.Tensor.")
+    
+    if poles.shape[0] != coeffs.shape[0]:
+        raise ValueError("Poles and coeffs must have the same number of elements.")
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError("Poles must be inside the unit circle!")
+    
+    # Calculate the biorthogonal system elements
+    v = coeffs @ biort_system(length, poles)
+    
+    return v
+

@@ -170,8 +170,8 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
     Table
     -----
     +-------+-------+-------+-------+-------+-------+-------+
-    |       |       | mtdr1 | mtdr1 | mtdr1 | ...   | mtdr1 |
-    |       |       | mtdr2 | mtdr2 | mtdr2 | ...   | mtdr2 |
+    |       |       | mlf1  | mlf1  | mlf1  | ...   | mlf1  |
+    |       |       | mlf2  | mlf2  | mlf2  | ...   | mlf2  |
     | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
     +-------+-------+-------+-------+-------+-------+-------+
 
@@ -250,3 +250,60 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
 
     return co.squeeze(), err.item()
 
+def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+    """
+    Generate a function in the space spanned by the LF system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    poles : torch.Tensor
+        Poles of the rational system (row vector).
+    coeffs : torch.Tensor
+        Coefficients of the linear combination to form (row vector).
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a row vector.
+    
+        It is the linear combination of the LF system elements.
+
+    Table
+    -----
+    +-------+-------+-------+-------+-------+-------+-------+
+    |       |       |  lf1  |  lf1  |  lf1  | ...   |  lf1  |
+    |       |       |  lf2  |  lf2  |  lf2  | ...   |  lf2  |
+    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    +-------+-------+-------+-------+-------+-------+-------+
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    
+    # Validate input parameters
+    if not isinstance(length, int) or length < 2:
+        raise ValueError('Length must be an integer greater than or equal to 2.')
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError('Coefficients must be a 1-dimensional torch.Tensor.')
+    
+    if poles.size(0) != coeffs.size(0):
+        raise ValueError('Poles and coefficients must have the same number of elements.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Pole values must be less than 1 in magnitude.')
+    
+    # Generate the LF system elements
+    lf_sys = lf_system(length, poles)
+    
+    # Perform matrix multiplication to generate the function
+    v = coeffs @ lf_sys
+    
+    return v

@@ -1,6 +1,6 @@
 import torch
 import math
-from typing import Callable
+from collections.abc import Callable
 
 from blaschke import arg_inv, argdr_inv
 from mt_sys import mt_system

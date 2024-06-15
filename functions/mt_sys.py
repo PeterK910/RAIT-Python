@@ -208,3 +208,48 @@ def mtdr_system(poles, eps=1e-6):
         mts_im[j, :] = mt_values.imag
 
     return mts_re, mts_im
+
+def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float]:
+    """
+    Calculate the Fourier coefficients of 'v' with respect to the 
+    Malmquist-Takenaka system defined by 'poles'.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        An arbitrary vector.
+    poles : torch.Tensor
+        Poles of the rational system.
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of v with respect to the Malmquist-Takenaka 
+        system defined by poles.
+    float
+        L^2 norm of the approximation error.
+    
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+        raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+
+    # Calculate the Malmquist-Takenaka system elements
+    mts = mt_system(v.size(0), poles)
+    
+    # Calculate coefficients and error
+    co = (mts @ v.unsqueeze(1) / v.size(0)).squeeze()
+    err = torch.linalg.norm(co @ mts - v).item()
+    
+    return co, err
