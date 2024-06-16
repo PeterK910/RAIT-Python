@@ -1,6 +1,6 @@
 import torch
-from other import multiplicity, discretize_dc
-from biort_sys import biort_system
+from other import multiplicity, discretize_dc, arg_inv, subsample, dotdc
+from biort_sys import biort_system, biortdc_system
 
 def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
     """
@@ -307,3 +307,65 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     v = coeffs @ lf_sys
     
     return v
+
+def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
+    """
+    Calculates the mlfdc-coefficients of 'signal' with respect to the
+    discrete modified basic rational system given by 'mpoles'.
+
+    Parameters
+    ----------
+    signal : torch.Tensor
+        An arbitrary vector (1-dimensional tensor).
+    mpoles : torch.Tensor
+        Poles of the modified basic rational system (1-dimensional tensor).
+    eps : float, optional
+        Accuracy of the discretization on the unit disc (default is 1e-6).
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of 'signal' with respect to the discrete 
+        modified basic rational system defined by 'mpoles'.
+    float
+        L^2 norm of the approximation error.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
+        raise ValueError('Signal must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('Mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(eps, float):
+        raise ValueError('Eps must be a float.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('Mpoles must be inside the unit circle!')
+
+    # Subsample signal and calculate coefficients
+    m = mpoles.numel()
+    z = torch.linspace(-torch.pi, torch.pi, m + 1)
+    t = arg_inv(mpoles, z, eps)
+    samples = subsample(signal, t)
+    
+    co = torch.zeros(m)
+    bts = biortdc_system(mpoles, eps)
+
+    for i in range(m):
+        co[i] = dotdc(samples, bts[i], mpoles, t)
+
+    # Calculate error
+    len_signal = signal.numel()
+    mlf = mlf_system(len_signal, mpoles)
+    
+    err = torch.linalg.norm(torch.matmul(co, mlf) - signal).item()
+
+    return co, err
+

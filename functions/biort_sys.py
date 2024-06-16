@@ -331,3 +331,60 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
     
     return v
 
+def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+    """
+    Generates a function in the space spanned by the discrete biorthogonal system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    mpoles : torch.Tensor
+        Poles of the biorthogonal system (1-dimensional tensor).
+    coeffs : torch.Tensor
+        Coefficients of the linear combination to form (1-dimensional tensor).
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a 1-dimensional tensor.
+
+        It is the linear combination of the discrete biorthogonal system elements.
+
+    Table
+    -----
+    +-------+-------+-------+-------+-------+-------+-------+
+    |       |       | btdc1 | btdc1 | btdc1 | ...   | btdc1 |
+    |       |       | btdc2 | btdc2 | btdc2 | ...   | btdc2 |
+    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    +-------+-------+-------+-------+-------+-------+-------+
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(length, int) or length < 2:
+        raise ValueError('Length must be an integer greater than or equal to 2.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    
+    if mpoles.shape[0] != coeffs.shape[0]:
+        raise ValueError('mpoles and coeffs must have the same number of elements.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('mpoles must be inside the unit circle!')
+
+    # Calculate the biorthogonal system elements
+    bts = biort_system(length, mpoles)
+    
+    # Calculate the linear combination of the discrete biorthogonal system elements
+    v = coeffs @ bts
+
+    return v

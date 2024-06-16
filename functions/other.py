@@ -85,14 +85,6 @@ def bisection_order(n: int) -> torch.Tensor:
         watch += 1
     return bo
 
-
-"""
-Converts the coefficients coeffs between the discrete systems base1 and base2.
-Requires the implementation of mlfdc_system, biortdc_system, and mtdc_system
-"""
-def coeffd_conv(poles, coeffs, base1, base2, eps):
-    pass
-
 """
 Computes the non-equidistant complex discretization on the unit disc that refers to the given poles.
 
@@ -144,75 +136,110 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t
-import torch
 
-def dotdc(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], poles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
 
     Parameters
     ----------
-    F : callable (Dcomplex unit disk (without edge)->Ccomplex)
-        Analytic function on the unit disk, returning torch.Tensor.
-    G : callable
-        Analytic function on the unit disk, returning torch.Tensor.
+    F : torch.Tensor
+        Values of the first function (ID -> IC) on the unit disk.
+    G : torch.Tensor
+        Values of the second function (ID -> IC) on the unit disk.
     poles : torch.Tensor
         Poles of the rational system.
     t : torch.Tensor
-        The arguments at which to evaluate the dot product.
+        Arguments for which to evaluate the dot product.
 
     Returns
     -------
     torch.Tensor
         Values of the complex dot product of 'F' and 'G' at 't'.
-    """
-    if not callable(F) or not callable(G):
-        raise TypeError("F and G must be callable functions returning torch.Tensor.")
-    if not isinstance(poles, torch.Tensor):
-        raise TypeError("poles must be a torch.Tensor.")
-    if not isinstance(t, torch.Tensor):
-        raise TypeError("t must be a torch.Tensor.")
 
-    s = torch.sum(F(t[:-1]) * torch.conj(G(t[:-1])) / kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles))
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(F, torch.Tensor) or not isinstance(G, torch.Tensor):
+        raise ValueError('F and G must be torch.Tensors.')
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+
+    if F.size(0) != G.size(0) or F.size(0) != t.size(0):
+        raise ValueError('F, G, and t must have the same number of elements.')
+
+    # Compute the kernel values
+    kernel_vals = kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles)
+
+    # Compute the complex discrete dot product
+    s = torch.sum(F[:-1] * torch.conj(G[:-1]) / kernel_vals)
+
     return s
+
 
 import torch
 
-def dotdr(F:Callable[[torch.Tensor],torch.Tensor], G:Callable[[torch.Tensor],torch.Tensor], mpoles:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
+def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
-    Compute the values of the discrete real dot product of two functions in H^2(ID).
+    Computes discrete real dot product of two functions in H^2(ID).
 
     Parameters
     ----------
-    F : callable
-        Analytic function on the unit disk.
-    G : callable
-        Analytic function on the unit disk.
+    F : torch.Tensor
+        Values of the first function (ID -> IC) on the unit disk.
+    G : torch.Tensor
+        Values of the second function (ID -> IC) on the unit disk.
     mpoles : torch.Tensor
-        Poles of the rational system.
+        Poles of the rational system excluding zero.
     t : torch.Tensor
-        The angle in radians.
+        Arguments for which to evaluate the dot product.
 
     Returns
     -------
     torch.Tensor
-        The values of the real dot product of 'F' and 'G' at 't'.
-    """
-    # Validate input parameters
-    if not callable(F) or not callable(G):
-        raise TypeError("F and G must be callable functions returning torch.Tensor.")
-    if not isinstance(mpoles, torch.Tensor) or mpoles.dim() != 1:
-        raise TypeError("mpoles must be a 1D torch.Tensor.")
-    if not isinstance(t, torch.Tensor) or t.dim() != 1:
-        raise TypeError("t must be a 1D torch.Tensor.")
+        Values of the real dot product of 'F' and 'G' at 't'.
 
-    # Prepend 0 to mpoles as per MATLAB code
-    mpoles = torch.cat((torch.tensor([0.0]), mpoles))
-   
-    # Compute the discrete real dot product
-    s = torch.sum(F(t) * torch.conj(G(t)) / (2 * torch.real(kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles)) - 1))
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(F, torch.Tensor):
+        raise ValueError('F must be a torch.Tensor.')
+    
+    if not isinstance(G, torch.Tensor):
+        raise ValueError('G must be a torch.Tensor.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+
+    if F.size(0) != G.size(0):
+        raise ValueError('F and G must have the same number of elements.')
+
+    # Prepend zero to the poles
+    mpoles_with_zero = torch.cat((torch.zeros(1), mpoles))
+
+    # Compute the kernel values
+    kernel_vals = kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles_with_zero)
+
+    # Compute the real discrete dot product
+    s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel_vals) - 1))
 
     return s
+
 
 
 
@@ -416,3 +443,68 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     co = torch.linalg.solve(G, F.mm(coeffs.t())).t()
     
     return co
+
+import torch
+
+def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:
+    """
+    Converts the coefficients between the discrete systems base1 and base2.
+
+    Parameters
+    ----------
+    poles : torch.Tensor
+        Poles of the discrete systems (1-dimensional tensor).
+    coeffs : torch.Tensor
+        Coefficients with respect to the discrete system 'base1' (1-dimensional tensor).
+    base1 : str
+        Type of the discrete system to be converted.
+    base2 : str
+        Type of the converted discrete system.
+    eps : float, optional
+        Accuracy of the discretization on the unit disc (default is 1e-6).
+
+    Returns
+    -------
+    torch.Tensor
+        Converted coefficients with respect to the system 'base2'.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError('Coeffs should be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(base1, str) or not isinstance(base2, str):
+        raise ValueError('Base1 and Base2 must be strings.')
+    
+    if not isinstance(eps, float):
+        raise ValueError('Eps must be a float.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+
+    if base1 not in ['mlfdc', 'biortdc', 'mtdc']:
+        raise ValueError('Invalid system type for base1! Choose from mlfdc, biortdc, mtdc.')
+    
+    if base2 not in ['mlfdc', 'biortdc', 'mtdc']:
+        raise ValueError('Invalid system type for base2! Choose from mlfdc, biortdc, mtdc.')
+    
+    # Generate systems based on 'base1' and 'base2'
+    g1 = globals()[f'{base1}_system'](poles, eps)
+    g2 = globals()[f'{base2}_system'](poles, eps)
+
+    # Convert coefficients between systems
+    F = g1 @ g1.t() / coeffs.shape[0]
+    G = g1 @ g2.t() / coeffs.shape[0]
+    
+    co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
+
+    return co
+

@@ -253,3 +253,63 @@ def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float
     err = torch.linalg.norm(co @ mts - v).item()
     
     return co, err
+
+import torch
+
+def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+    """
+    Generates a function in the space spanned by the MT system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    poles : torch.Tensor
+        Poles of the rational system (1-dimensional tensor).
+    coeffs : torch.Tensor
+        Coefficients of the linear combination to form (1-dimensional tensor).
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a 1-dimensional tensor.
+
+        It is the linear combination of the MT system elements.
+
+    Table
+    -----
+    +-------+-------+-------+-------+-------+-------+-------+
+    |       |       |  mt1  |  mt1  |  mt1  | ...   |  mt1  |
+    |       |       |  mt2  |  mt2  |  mt2  | ...   |  mt2  |
+    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    +-------+-------+-------+-------+-------+-------+-------+
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(length, int) or length < 2:
+        raise ValueError('Length must be an integer greater than or equal to 2.')
+    
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError('Coeffs must be a 1-dimensional torch.Tensor.')
+    
+    if poles.shape[0] != coeffs.shape[0]:
+        raise ValueError('Poles and coeffs must have the same number of elements.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+
+    # Calculate the MT system elements
+    mt_sys = mt_system(length, poles)
+    
+    # Calculate the linear combination of the MT system elements
+    v = coeffs @ mt_sys
+
+    return v
