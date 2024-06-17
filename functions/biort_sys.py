@@ -1,7 +1,7 @@
 import torch
 from math import factorial
 from scipy.special import binom
-from other import multiplicity, discretize_dc, subsample, dotdc
+from util import multiplicity, discretize_dc, subsample, dotdc
 from rat_sys import mlf_system, mlfdc_system
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:

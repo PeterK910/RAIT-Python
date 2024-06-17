@@ -1,43 +1,91 @@
 import torch
 import matplotlib.pyplot as plt
 from numpy import pi as PI
-import other
-"""
-Derivatives of the argument function of a Blaschke product.
+import util
+import torch
 
-:param a: parameters of the Blaschke product, one-dimensional Tensor with complex numbers
-:type a: Tensor
-:param t: values in [-pi,pi), where the function values are needed, one-dimensional Tensor with floats
-:type t: Tensor
-
-:returns: the derivatives of the argument function at the points in "t", one-dimensional Tensor with floats
-:rtype: Tensor
-"""
 def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-    # Convert inputs to PyTorch tensors if they are not already
-    a.to(dtype=torch.complex64)
-    t.to(dtype=torch.float32)
+    """
+    Derivatives of the argument function of a Blaschke product.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    t : torch.Tensor
+        Values in [-pi, pi), where the function values are needed.
+
+    Returns
+    -------
+    torch.Tensor
+        The derivatives of the argument function at the points in t.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
     
-    # Check if inputs are 1D tensors
-    if a.dim() != 1 or t.dim() != 1:
-        raise ValueError('Parameters should be 1D tensors!')
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Bad poles!')
+        raise ValueError('Elements of a must be inside the unit circle!')
+
+    # Calculate derivatives
+    bd = torch.zeros_like(t)
     
-    bd = torch.zeros(t.size())
     for i in range(a.size(0)):
-        bd = bd + __arg_der_one(a[i], t)
-    bd = bd / a.size(0)
-    return bd
-"""
-calculate the derivative at each point in t
-"""
-def __arg_der_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-    r = torch.abs(a)
-    fi = torch.angle(a)
+        bd += __arg_der_one(a[i], t)
     
-    bd = (1 - r**2) / (1 + r**2 - 2*r*torch.cos(t-fi))
+    bd /= a.size(0)
+
     return bd
+
+def __arg_der_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    """
+    Calculate the derivative of the argument function for one element of a Blaschke product.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        A single parameter of the Blaschke product, must be a complex number inside the unit circle.
+    t : torch.Tensor
+        Values in [-pi, pi), where the function values are needed.
+
+    Returns
+    -------
+    torch.Tensor
+        The derivative of the argument function at the points in t for one element.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 0 or not torch.is_complex(a):
+        raise ValueError('a must be a 0-dimensional complex torch.Tensor.')
+    
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    
+    if a.abs() >= 1:
+        raise ValueError('The absolute value of a must be inside the unit circle!')
+
+    # Calculate the derivative for one element
+    r = a.abs()
+    fi = a.angle()
+
+    bd = (1 - r**2) / (1 + r**2 - 2 * r * torch.cos(t - fi))
+
+    return bd
+
 """
  Gives a sampled Blaschke function.
 
@@ -156,7 +204,7 @@ Uses the bisection method with an enhanced order of calculation
 """
 def __arg_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     n = len(b)
-    s = other.bisection_order(n) + 1
+    s = util.bisection_order(n) + 1
     x = torch.zeros(n+1)
     for i in range(1, n+2):
         if i == 1:
@@ -239,7 +287,7 @@ Uses the bisection method with an enhanced order of calculation
 """
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     n = len(b)
-    s = other.bisection_order(n) + 1
+    s = util.bisection_order(n) + 1
     x = torch.zeros(n+1)
     for i in range(1, n+2):
         if i == 1:

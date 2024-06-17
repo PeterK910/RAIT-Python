@@ -1,5 +1,5 @@
 import torch
-from other import multiplicity, discretize_dc, arg_inv, subsample, dotdc
+from util import multiplicity, discretize_dc, arg_inv, subsample, dotdc
 from biort_sys import biort_system, biortdc_system
 
 def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:

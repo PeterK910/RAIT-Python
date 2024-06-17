@@ -1,5 +1,5 @@
 import torch
-from other import discretize_dc, discretize_dr, subsample, dotdc, dotdr
+from util import discretize_dc, discretize_dr, subsample, dotdc, dotdr
 """
 Generates the Malmquist-Takenaka system.
 

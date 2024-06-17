@@ -1,6 +1,8 @@
 import torch
 import math
-from collections.abc import Callable
+from scipy.signal.windows import tukey
+from scipy.signal import savgol_filter
+from matplotlib import pyplot as plt
 
 from blaschke import arg_inv, argdr_inv
 from mt_sys import mt_system
@@ -530,3 +532,197 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
 
     return co
+
+import torch
+
+
+def periodize(v: torch.Tensor, alpha: float, draw: bool = False) -> torch.Tensor:
+    """
+    Calculates the periodized extension of a signal.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        An arbitrary vector.
+    alpha : float
+        Alpha parameter of the Tukey window.
+    draw : bool, optional
+        Logical value to display the periodized signal (default is False).
+
+    Returns
+    -------
+    torch.Tensor
+        Periodized signal.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+        raise ValueError('Signal must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(alpha, float) or not (0 <= alpha <= 1):
+        raise ValueError('Alpha must be a float between 0 and 1.')
+    
+    # Calculate the periodized signal
+    v_max = torch.max(v)
+    v_ind = torch.argmax(v)
+    gap = (torch.max(v[0], v[-1]) + torch.min(v[0], v[-1])) / 2
+    v = v - gap
+    n = v.size(0)
+    N = int(math.ceil(n * alpha))
+
+    # Approximating derivatives
+    smooth = savgol_filter(v, 11, 2)
+    smooth = torch.from_numpy(smooth)
+    fx = __remNEP(smooth)
+    _, dy, _ = __curvatures(torch.arange(1, n + 1), smooth)  # This would be a custom function or imported from elsewhere
+
+    left = torch.sum(dy[0:fx[1]])
+    right = torch.sum(dy[fx[-2]:])
+
+    s = torch.cat((torch.ones(N) * v[0], v, torch.ones(N) * v[-1]))
+
+    # Further processing based on derivatives and signal values
+
+    if torch.sign(left) == torch.sign(right):
+        end_slope = (v[-1] - v[0]) / n
+        if torch.sign(left) == torch.sign(end_slope):
+            # taking into account the significance of the first derivatives
+            # at the end points
+            trs = abs(torch.max(v[0], v[-1]) - torch.min(v[0], v[-1])) / 2
+            if abs(left) < abs(right):
+                s -= torch.sign(right) * (abs(v[-1]) + trs)
+            elif abs(left) > abs(right):
+                s += torch.sign(left) * (abs(v[0]) + trs)
+        else:
+            avg = (v[0] + v[-1]) / 2           
+            s -= avg
+    
+    elif torch.sign(left) > 0:
+        # positive first derivatives
+        if v[0] < 0 or v[-1] < 0:
+            s -= torch.min(v[0], v[-1])
+    
+    else:
+        # negative first derivatives
+        if torch.sign(v[0]) > 0 or torch.sign(v[-1]) > 0:
+            s -= torch.max(v[0], v[-1])
+
+    # Apply Tukey window
+    tukey_window = tukey(len(s), (2 * N + 2) / len(s))
+    s = s * torch.from_numpy(tukey_window)
+
+    s = s + (v_max - s[N + v_ind])
+
+    if draw:
+        plt.plot(s.numpy(), 'r')
+        plt.plot(range(N, N + len(v)), s.numpy()[N:N + len(v)], 'g')
+        plt.show()
+
+    return s
+
+def __remNEP(data: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Remove Non Extreme Points from the given data array.
+
+    Parameters
+    ----------
+    data : torch.Tensor
+        A 1-dimensional tensor of data points.
+
+    Returns
+    -------
+    tuple[torch.Tensor, torch.Tensor]
+        Indices of extreme points and their corresponding values.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(data, torch.Tensor) or data.ndim != 1:
+        raise ValueError('Data must be a 1-dimensional torch.Tensor.')
+
+    n = data.size(0)
+    j = 0
+    x = torch.zeros(n, dtype=torch.int64)
+    y = torch.zeros(n, dtype=data.dtype)
+    x[j] = 0
+    y[j] = data[j]
+    
+    for i in range(1, n - 1):
+        # Check if data[i] is a min or max extreme point
+        if (y[j] < data[i] and data[i] > data[i + 1]) or (y[j] > data[i] and data[i] < data[i + 1]):
+            j += 1
+            y[j] = data[i]
+            x[j] = i
+    
+    j += 1
+    y[j] = data[n - 1]
+    x[j] = n - 1
+    
+    # Trim the tensors to the size of j + 1
+    x = x[:j + 1]
+    y = y[:j + 1]
+
+    return x, y
+
+def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Approximate discrete curvatures.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        A 1-dimensional tensor of x-coordinates.
+    y : torch.Tensor
+        A 1-dimensional tensor of y-coordinates corresponding to x.
+
+    Returns
+    -------
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+        Curvatures, first derivatives, and second derivatives.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(x, torch.Tensor) or x.ndim != 1:
+        raise ValueError('x must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(y, torch.Tensor) or y.ndim != 1:
+        raise ValueError('y must be a 1-dimensional torch.Tensor.')
+    
+    if x.size(0) != y.size(0):
+        raise ValueError('x and y must have the same number of elements.')
+
+    n = y.size(0)
+    dy = torch.zeros(n - 2, dtype=y.dtype)
+    ddy = torch.zeros(n - 2, dtype=y.dtype)
+    
+    # Curvatures are set to zero at the endpoints by default.
+    k = torch.zeros(n - 2, dtype=y.dtype)
+    
+    # Bezier-approximation
+    for i in range(1, n - 1):
+        t = x[i]
+        ddy[i - 1] = (y[i - 1] * (-2 / (x[i + 1] - x[i - 1])) * (-1 / (x[i + 1] - x[i - 1])) 
+                      - 2 * (4 * y[i] - y[i - 1] - y[i + 1]) / (x[i + 1] - x[i - 1])**2 
+                      + y[i + 1] * (2 / (x[i + 1] - x[i - 1])**2))
+        
+        dy[i - 1] = (2 * y[i - 1] * ((x[i + 1] - t) / (x[i + 1] - x[i - 1])) * (-1 / (x[i + 1] - x[i - 1])) 
+                     + (4 * y[i] - y[i - 1] - y[i + 1]) * (x[i - 1] + x[i + 1] - 2 * t) / (x[i + 1] - x[i - 1])**2 
+                     + 2 * y[i + 1] * ((t - x[i - 1]) / (x[i + 1] - x[i - 1])) * (1 / (x[i + 1] - x[i - 1])))
+        
+        k[i - 1] = ddy[i - 1] / ((1 + dy[i - 1]**2)**(3/2))
+
+    return k, dy, ddy
