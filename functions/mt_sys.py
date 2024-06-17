@@ -1,5 +1,5 @@
 import torch
-from other import discretize_dc, discretize_dr, subsample, dotdc
+from other import discretize_dc, discretize_dr, subsample, dotdc, dotdr
 """
 Generates the Malmquist-Takenaka system.
 
@@ -428,3 +428,65 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
 
     return v
 
+def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, torch.Tensor, float]:
+    """
+    Calculates the mtdr-coefficients of 'v' with respect to the discrete real MT system given by 'mpoles'.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        An arbitrary vector.
+    mpoles : torch.Tensor
+        Poles of the discrete real MT system.
+    eps : float, optional
+        Accuracy of the real discretization on the unit disc. Default is 1e-6.
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of 'v' with respect to the real part 
+        of the discrete real MT system defined by 'mpoles'.
+    torch.Tensor
+        The Fourier coefficients of 'v' with respect to the imaginary 
+        part of the discrete real MT system defined by 'mpoles'.
+    float
+        L^2 norm of the approximation error.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+        raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(eps, float) or eps <= 0:
+        raise ValueError('eps must be a positive float.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('mpoles must be inside the unit circle!')
+
+    # Calculate the mtdr system elements
+    m = len(mpoles) + 1
+    t = discretize_dr(mpoles, eps)
+    samples = subsample(v, t)
+    
+    cUk = torch.zeros(m)
+    cVk = torch.zeros(m)
+    
+    mts_re, mts_im = mtdr_system(mpoles, eps)
+
+    for i in range(m):
+        cUk[i] = dotdr(samples, mts_re[i], mpoles, t)
+        cVk[i] = dotdr(samples, mts_im[i], mpoles, t)
+
+    SRf = mtdr_generate(len(v), mpoles, cUk, cVk)
+    
+    err = torch.norm(SRf - v).item()
+
+    return cUk, cVk, err

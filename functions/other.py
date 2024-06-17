@@ -530,4 +530,3 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
 
     return co
-
