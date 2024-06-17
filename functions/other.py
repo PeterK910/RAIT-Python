@@ -6,41 +6,64 @@ from blaschke import arg_inv, argdr_inv
 from mt_sys import mt_system
 from biort_sys import biort_system
 from rat_sys import lf_system, mlf_system
-"""
-Calculates the imaginary part of v using FFT
 
-:param v: input tensor with real elements
-:type v: tensor
-:returns: tensor with imaginary part of v
-:rtype: tensor
-"""
 def addimag(v: torch.Tensor) -> torch.Tensor:
-    # Check if input is a tensor
-    if (not torch.is_tensor(v)):
-        raise TypeError("Input must be a tensor")
-    # Check if tensor has 1 row
-    if v.size(dim=0) != 1:
-        raise ValueError("Input tensor must have exactly 1 row")
-    # Check if tensor has only real elements
-    if not torch.is_floating_point(v):
-        raise ValueError("Input tensor must have real elements")
+    """
+    Calculates the imaginary part of v using FFT to be in Hardy space.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        A vector with real elements.
+
+    Returns
+    -------
+    torch.Tensor
+        A complex vector with appropriate imaginary part.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if v.ndim != 1:
+        raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-    # Calculate imaginary part of v using FFT
+    if not torch.all(v.imag == 0):
+        raise ValueError('The vector is not real!')
+
+    # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
     vif = __mt_arrange(vf)
     vi = torch.fft.ifft(vif)
+
     return vi
 
-"""
-Rearrage FFT(v) so that lots of zeros appear on the right side of the FFT
-"""
 def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
-    mt = t.size(dim=1)
-    ta = torch.zeros(t.size())
+    """
+    Rearrange FFT(v) so that lots of zeros appear on the right side of the FFT.
+
+    Parameters
+    ----------
+    t : torch.Tensor
+        The FFT of a vector.
+
+    Returns
+    -------
+    torch.Tensor
+        The rearranged FFT of a vector.
+    """
+
+    mt = t.size(0)
+    ta = torch.zeros_like(t)
     ta[0] = t[0]
-    for i in range(1, mt//2 + 1): # 1 to mt//2 inclusive
-        ta[i] = t[i] + torch.conj(t[mt+1-i])
-        ta[mt+1-i] = 0
+    
+    for i in range(1, mt // 2):
+        ta[i] = t[i] + torch.conj(t[mt - i])
+        ta[mt - i] = 0
+
     return ta
 
 """

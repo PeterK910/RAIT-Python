@@ -1,5 +1,5 @@
 import torch
-from other import discretize_dc, discretize_dr
+from other import discretize_dc, discretize_dr, subsample, dotdc
 """
 Generates the Malmquist-Takenaka system.
 
@@ -254,8 +254,6 @@ def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float
     
     return co, err
 
-import torch
-
 def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
     """
     Generates a function in the space spanned by the MT system.
@@ -313,3 +311,120 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     v = coeffs @ mt_sys
 
     return v
+
+def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
+    """
+    Calculate the mtdc-coefficients of 'signal' with respect to the 
+    discrete complex MT system given by 'mpoles'.
+
+    Parameters
+    ----------
+    signal : torch.Tensor
+        An arbitrary vector.
+    mpoles : torch.Tensor
+        Poles of the discrete complex MT system.
+    eps : float
+        Accuracy of the complex discretization on the unit disc.
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of 'signal' with respect to the discrete 
+        complex MT system defined by 'mpoles'.
+    float
+        L^2 norm of the approximation error.
+    
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
+        raise ValueError('signal must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('mpoles must be inside the unit circle!')
+    
+    if not isinstance(eps, float):
+        raise ValueError('eps must be a float.')
+
+    # Discretize and sample
+    t = discretize_dc(mpoles, eps)
+    samples = subsample(signal, t)
+
+    # Calculate coefficients using helper functions assumed to be implemented correctly
+    m = len(mpoles)
+    co = torch.zeros(1, m)
+    mts = mtdc_system(mpoles, eps)
+
+    for i in range(m):
+        co[0, i] = dotdc(samples, mts[i], mpoles, t)
+
+    # Calculate error
+    len_signal = len(signal)
+    mts = mt_system(len_signal, mpoles)
+    err = torch.norm(co @ mts - signal).item()
+
+    return co.squeeze(), err
+
+def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+    """
+    Generates a function in the space spanned by the discrete complex MT system.
+
+    Parameters
+    ----------
+    length : int
+        Number of points in case of uniform sampling.
+    mpoles : torch.Tensor
+        Poles of the discrete complex MT system (row vector).
+    coeffs : torch.Tensor
+        Coefficients of the linear combination to form (row vector).
+
+    Returns
+    -------
+    torch.Tensor
+        The generated function at the uniform sampling points as a row vector.
+
+        It is the linear combination of the discrete complex MT system elements.
+
+    Table
+    -----
+    +-------+-------+-------+-------+-------+-------+-------+
+    |       |       | mtdc1 | mtdc1 | mtdc1 | ...   | mtdc1 |
+    |       |       | mtdc2 | mtdc2 | mtdc2 | ...   | mtdc2 |
+    | co1   | co2   |   v   |   v   |   v   | ...   |   v   |
+    +-------+-------+-------+-------+-------+-------+-------+
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(length, int) or length < 2:
+        raise ValueError('length must be an integer greater than or equal to 2.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    
+    if mpoles.size(0) != coeffs.size(0):
+        raise ValueError('mpoles and coeffs must have the same number of elements.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('mpoles must be inside the unit circle!')
+
+    # Generate the MT system elements
+    mts = mt_system(length, mpoles)
+    v = coeffs @ mts
+
+    return v
+

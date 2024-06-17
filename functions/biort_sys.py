@@ -1,8 +1,8 @@
 import torch
 from math import factorial
 from scipy.special import binom
-from other import multiplicity, discretize_dc
-from rat_sys import mlf_system
+from other import multiplicity, discretize_dc, subsample, dotdc
+from rat_sys import mlf_system, mlfdc_system
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -388,3 +388,64 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     v = coeffs @ bts
 
     return v
+
+def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
+    """
+    Calculate the discrete biorthogonal-coefficients of 'v' with respect to 
+    the biorthogonal system given by 'mpoles'.
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        An arbitrary vector.
+    mpoles : torch.Tensor
+        Poles of the biorthogonal system.
+    eps : float, optional
+        Accuracy of the discretization on the unit disc. Default is 1e-6.
+
+    Returns
+    -------
+    torch.Tensor
+        The Fourier coefficients of v with respect to the discrete 
+        biorthogonal system defined by 'mpoles'.
+    float
+        L^2 norm of the approximation error.
+    
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+
+    # Validate input parameters
+    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+        raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(mpoles)) >= 1:
+        raise ValueError('mpoles must be inside the unit circle!')
+    
+    if not isinstance(eps, float):
+        raise ValueError('eps must be a float.')
+
+    # Discretize and sample
+    t = discretize_dc(mpoles, eps)
+    samples = subsample(v, t)
+
+    # Calculate coefficients
+    m = len(mpoles)
+    co = torch.zeros(m)
+    mlf = mlfdc_system(mpoles, eps)
+
+    for i in range(m):
+        co[i] = dotdc(samples, mlf[i], mpoles, t)
+
+    # Calculate error
+    len_v = len(v)
+    bts = biort_system(len_v, mpoles)
+    err = torch.norm(co @ bts - v).item()
+
+    return co, err
+
