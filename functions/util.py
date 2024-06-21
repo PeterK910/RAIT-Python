@@ -68,47 +68,62 @@ def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
 
     return ta
 
-"""
-Gives a better order for multiple bisection runs
 
-:param n: number of points
-:type n: int
-
-:returns: a 3-by-(n+1) tensor with the order of calculation, elements are integers
-:rtype: Tensor
-"""
 def bisection_order(n: int) -> torch.Tensor:
-    bo = torch.zeros((n+1, 3), dtype=torch.int32)
+    """
+    Gives a better order for multiple bisection runs.
+
+    Parameters
+    ----------
+    n : int
+        Number of points.
+
+    Returns
+    -------
+    torch.Tensor
+        A 3-by-(n+1) matrix with the order of calculation.
+
+    Raises
+    ------
+    ValueError
+        If input parameter is invalid.
+    """
+    # Validate input parameter
+    if not isinstance(n, int) or n < 0:
+        raise ValueError('n must be a non-negative integer.')
+
+    # Initialize the matrix
+    bo = torch.zeros(n + 1, 3)
     bo[0, :] = torch.tensor([0, -1, -1])
     bo[1, :] = torch.tensor([n, -1, -1])
     bo[2, :] = torch.tensor([n // 2, 0, n])
 
-    watch = 2 # which column is currently watched
-    fill = 3 # where to fill the new values
+    watch = 3  # Column currently being watched
+    fill = 4  # Where to fill the new values
 
-    #fill the matrix with the ordering
-    while fill <= n:
-        #names
-        ch = bo[watch,0] #child
-        p1 = bo[watch,1] #parent 1
-        p2 = bo[watch,2] #parent 2
-        #INVAR: p1 < ch < p2
+    # Fill the matrix with the ordering
+    while fill <= n + 1:
+        # Get child and parents
+        ch = bo[watch, 0]
+        p1 = bo[watch, 1]
+        p2 = bo[watch, 2]
 
-        #if there is place for another element...
-        #the child with parent 1
-        if ch - p1 > 1 and fill <= n:
-            gch = math.floor((ch + p1)/2) #grandchild
-            bo[fill] = torch.tensor([gch, p1, ch])
+        # Add child with parent 1
+        if ch - p1 > 1 and fill <= n + 1:
+            gch = (ch + p1) // 2  # Grandchild
+            bo[fill, :] = torch.tensor([gch, p1, ch])
             fill += 1
-        #the child with parent 2
-        if p2 - ch > 1 and fill <= n:
-            gch = math.floor((ch + p2)/2) #grandchild
-            bo[fill] = torch.tensor([gch, ch, p2])
+
+        # Add child with parent 2
+        if p2 - ch > 1 and fill <= n + 1:
+            gch = (ch + p2) // 2  # Grandchild
+            bo[fill, :] = torch.tensor([gch, ch, p2])
             fill += 1
-        
-        #watch the next column
+
         watch += 1
+
     return bo
+
 
 """
 Computes the non-equidistant complex discretization on the unit disc that refers to the given poles.

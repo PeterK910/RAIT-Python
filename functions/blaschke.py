@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from PIL import Image
 
-import util
+from util import bisection_order
 import torch
 
 def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -210,111 +210,217 @@ def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torc
 
     return B_abs, B_arg, B
 
-"""
-Values of the argument function of a Blaschke product.
+def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    """
+    Calculate the values of the argument function of a Blaschke product.
 
-:param a: parameters of the Blaschke product, one-dimensional Tensor with complex numbers
-:type a: Tensor
-:param t: values in [-pi,pi), where the function values are needed, one-dimensional Tensor with floats
-:type t: Tensor
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    t : torch.Tensor
+        Values in [-pi, pi), where the function values are needed.
 
-:returns: the values of the argument function at the points in "t", one-dimensional Tensor with floats
-:rtype: Tensor
-"""
-def arg_fun(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
-    if a.ndim != 1 or t.ndim != 1:
-        raise ValueError('Parameters should be 1D tensors!')
+    Returns
+    -------
+    torch.Tensor
+        The values of the argument function at the points in t.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Bad poles!')
+        raise ValueError('Elements of a must be inside the unit circle!')
 
-    b = torch.zeros_like(t)
-    for i in range(a.size(0)):
+    # Calculate the argument function values
+    b = torch.zeros(len(t))
+    for i in range(len(a)):
         b += __arg_fun_one(a[i], t)
-    b /= a.size(0)
+    b /= len(a)
+
     return b
-"""
-calculate the argument at a given point in t
-"""
-def __arg_fun_one(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
-    r = torch.abs(a)
+
+def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    r = abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
+
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
+
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
     return b
-"""
-Same function as 'arg_fun', but it is continuous on IR. 
-TODO: types of arguments and return value (what type of numbers do the tensors contain?)
-"""
-def argdr_fun(a:torch.Tensor, t:torch.Tensor) -> torch.Tensor:
-    b = torch.zeros(t.size())
-    for j in range(t.numel()):
-        for i in range(a.numel()):
+
+def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    #TODO: are function parameters really the same as in arg_fun?
+    """
+    Calculate the continuous argument function on the interval IR for given 'a' and 't'.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    t : torch.Tensor
+        Values in [-pi, pi), where the function values are needed.
+
+    Returns
+    -------
+    torch.Tensor
+        The result of the continuous argument function.
+    """
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    
+    # Initialize the result tensor
+    b = torch.zeros_like(t)
+    
+    # Calculate the continuous argument function
+    for j in range(t.size(0)):
+        for i in range(a.size(0)):
             bs = arg_fun(a[i], t[j])
             b[j] += bs + 2 * torch.pi * torch.floor((t[j] + torch.pi) / (2 * torch.pi))
+    
     return b
 
-"""
-Inverse images by the argument function of a Blaschke product.
 
-:param a: parameters of the Blaschke product, one-dimensional Tensor with complex numbers
-:type a: Tensor
-:param b: values in [-pi,pi), where the inverse images are needed, one-dimensional Tensor with floats
-:type b: Tensor
-:param epsi: required precision for the inverses (optional, default 1e-4)
-:type epsi: float
+def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tensor:
+    """
+    Inverse images by the argument function of a Blaschke product.
 
-:returns: the inverse images of the values in "b" by the argument function, one-dimensional Tensor with floats
-:rtype: Tensor
-"""
-def arg_inv(a:torch.Tensor, b:torch.Tensor, epsi=1e-4) -> torch.Tensor:
-    if a.ndim != 1 or b.ndim != 1:
-        raise ValueError('Parameters should be 1-D tensors!')
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    b : torch.Tensor
+        Values in [-pi, pi) whose inverse image is needed.
+    epsi : float, optional
+        Required precision for the inverses (default is 1e-4).
+
+    Returns
+    -------
+    torch.Tensor
+        Inverse images by the argument function of the points in 'b'.
+    """
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(b, torch.Tensor) or b.ndim != 1:
+        raise ValueError('b must be a 1-dimensional torch.Tensor.')
+    
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Bad poles!')
-
+        raise ValueError('Elements of a must be inside the unit circle!')
+    
+    if epsi <= 0:
+        raise ValueError('epsi must be a positive number!')
+    
+    # Initialize the result tensor
+    t = torch.zeros_like(b)
+    
+    # Calculate inverse images
     if len(a) == 1:
         t = __arg_inv_one(a, b)
     else:
         t = __arg_inv_all(a, b, epsi)
+    
     return t
-"""
-Inverse when the number of poles is 1
-"""
-def __arg_inv_one(a:torch.Tensor, b:torch.Tensor)->torch.Tensor:
+
+def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """
+    Calculate the inverse images by the argument function of a Blaschke product.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    b : torch.Tensor
+        Values in [-pi, pi) whose inverse image is needed.
+
+    Returns
+    -------
+    torch.Tensor
+        Inverse images by the argument function of the points in 'b'.
+    """
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(b, torch.Tensor) or b.ndim != 1:
+        raise ValueError('b must be a 1-dimensional torch.Tensor.')
+    
+    # Calculate intermediate variables
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
-
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-
+    
+    # Calculate inverse images
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
-    t = (t + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    t = torch.fmod(t + torch.pi, 2 * torch.pi) - torch.pi  # Move it in [-pi, pi)
+    
     return t
-"""
-Inverse when the number of poles is greater than 1.
-Uses the bisection method with an enhanced order of calculation
-"""
-def __arg_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
+
+def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
+    """
+    Calculate the inverse images by the argument function of a Blaschke product.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    b : torch.Tensor
+        Values in [-pi, pi) whose inverse image is needed.
+    epsi : float
+        Tolerance for the bisection method.
+
+    Returns
+    -------
+    torch.Tensor
+        Inverse images by the argument function of the points in 'b'.
+    """
+    # Validate input parameters
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(b, torch.Tensor) or b.ndim != 1:
+        raise ValueError('b must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(epsi, float) or epsi <= 0:
+        raise ValueError('epsi must be a positive float.')
+    
+    # Initialize variables
     n = len(b)
-    s = util.bisection_order(n) + 1
-    x = torch.zeros(n+1)
-    for i in range(1, n+2):
-        if i == 1:
-            v1 = -torch.pi
-            v2 = torch.pi
-            fv1 = -torch.pi  # fv1 <= y
-            fv2 = torch.pi   # fv2 >= y
-        elif i == 2:
-            x[n] = x[0] + 2 * torch.pi  # x(s(2,1))
+    s = bisection_order(n) + 1
+    x = torch.zeros(n)
+    
+    for i in range(n):
+        if i == 0:
+            v1, v2 = -torch.pi, torch.pi
+            fv1, fv2 = -torch.pi, torch.pi
+
+            v1 = torch.tensor(v1)
+            v2 = torch.tensor(v2)
+            fv1 = torch.tensor(fv1)
+            fv2 = torch.tensor(fv2)
+        elif i == 1:
+            x[n] = x[0] + 2 * torch.pi
             continue
         else:
-            v1 = x[s[i, 1]]
-            v2 = x[s[i, 2]]
-            fv1 = arg_fun(a, v1)
-            fv2 = arg_fun(a, v2)
-
+            v1, v2 = x[s[i, 1]], x[s[i, 2]]
+            fv1, fv2 = arg_fun(a, v1), arg_fun(a, v2)
+        
         ba = b[s[i, 0]]
         if fv1 == ba:
             x[s[i, 0]] = v1
@@ -324,19 +430,20 @@ def __arg_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             continue
         else:
             xa = (v1 + v2) / 2
-            fvk = arg_fun(a, torch.tensor(xa))  # Convert xa to a tensor
-            while torch.abs(fvk - ba) > epsi:
+            fvk = arg_fun(a, xa)
+            while abs(fvk - ba) > epsi:
                 if fvk == ba:
                     x[s[i, 0]] = xa
-                    break
+                    return x
                 elif fvk < ba:
                     v1 = xa
                 else:
                     v2 = xa
                 xa = (v1 + v2) / 2
-                fvk = arg_fun(a, torch.tensor(xa))  # Convert xa to a tensor
+                fvk = arg_fun(a, xa)
             x[s[i, 0]] = xa
-    return x[:n]
+    
+    return x
 
 """
 Inverse images by the argument function of a Blaschke product. Unlike arg_inv, this is "continuous on IR".
@@ -381,7 +488,7 @@ Uses the bisection method with an enhanced order of calculation
 """
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     n = len(b)
-    s = util.bisection_order(n) + 1
+    s = bisection_order(n) + 1
     x = torch.zeros(n+1)
     for i in range(1, n+2):
         if i == 1:
