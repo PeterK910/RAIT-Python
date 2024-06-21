@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
-from numpy import pi as PI
+from PIL import Image
+
 import util
 import torch
 
@@ -86,35 +87,128 @@ def __arg_der_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     return bd
 
-"""
- Gives a sampled Blaschke function.
+def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
+    """
+    Gives a sampled Blaschke function.
 
-:param length: number of points to sample
-:type length: int
-:param poles: poles of the Blaschke product, one-dimensional Tensor with complex numbers
-:type poles: Tensor
+    Parameters
+    ----------
+    len : int
+        Number of points for uniform sampling.
+    poles : torch.Tensor
+        Parameters of the Blaschke product.
 
-:returns: the Blaschke product with given parameters sampled at uniform points on the torus, one-dimensional Tensor with complex numbers
-:rtype: Tensor
-"""
-def blaschkes(length:int, poles:torch.Tensor) -> torch.Tensor:
-    # Convert inputs to PyTorch tensors if they are not already
-    poles.to(dtype=torch.complex64)
-    
-    # Check if poles is a 1D Tensor
-    if poles.dim() != 1:
-        raise ValueError('Poles should be a 1D Tensor!')
-    
-    # Create a Tensor of linearly spaced values from -pi to pi
-    t = torch.linspace(-torch.pi, torch.pi, length + 1)
+    Returns
+    -------
+    torch.Tensor
+        The Blaschke product with given parameters sampled at uniform
+        points on the torus.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    # Validate input parameters
+    if not isinstance(len, int) or len <= 0:
+        raise ValueError('len must be a positive integer.')
+
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('Poles must be inside the unit circle!')
+
+    # Calculate the sampled Blaschke function
+    t = torch.linspace(-torch.pi, torch.pi, len + 1)
     z = torch.exp(1j * t)
-    b = torch.ones(length + 1, dtype=torch.complex64)
-    
-    # Compute the Blaschke product for each pole
-    for pole in poles:
-        b = b * (z - pole) / (1 - torch.conj(pole) * z)
-    
+    b = torch.ones(len + 1, dtype=torch.complex64)
+    for p in poles:
+        b = b * (z - p) / (1 - torch.conj(p) * z)
+
     return b
+
+import torch
+import numpy as np
+
+
+def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Transforms an image by applying the Blaschke function defined by poles 'a'.
+
+    Parameters
+    ----------
+    path : str
+        Path of the input image.
+    a : complex
+        Parameters of the Blaschke function.
+    show : bool
+        Displays the transformed images.
+
+    Returns
+    -------
+    torch.Tensor
+        Absolute values of the Blaschke function.
+    torch.Tensor
+        Arguments of the Blaschke function.
+    torch.Tensor
+        Transformed image.
+    
+    Raises
+    ------
+    FileNotFoundError
+        If the input image file does not exist.
+    """
+    try:
+        img = Image.open(path)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Image file '{path}' not found.")
+
+    # Convert image to grayscale
+    M = np.array(img.convert("L"))
+
+    B = torch.full_like(torch.tensor(M), 0.5)
+    B_arg = torch.full_like(torch.tensor(M), 0.5)
+    B_abs = torch.full_like(torch.tensor(M), 0.5)
+
+    m, n = M.shape
+    half = m // 2
+    bound = half - 10
+
+    # Blaschke function
+    def blaschke(z: complex) -> complex:
+        return (z - a) / (1 - np.conj(a) * z)
+    
+    for i in range(m):
+        for j in range(n):
+            if np.sqrt((j - half) ** 2 + (i - half) ** 2) < bound:
+                z = ((j - half) / bound) + ((i - half) * 1j / bound)
+                b = blaschke(z)
+                I = round(bound * np.real(b) + half)
+                J = round(bound * np.imag(b) + half)
+                B[i, j] = M[J, I]
+                B_abs[i, j] = abs(b)
+                t = np.arctan2(np.imag(b), np.real(b))
+                B_arg[i, j] = t
+            else:
+                B[i, j] = np.nan
+
+    if show:
+        # Display transformed images
+        plt.figure()
+        plt.imshow(B, cmap="gray")
+        plt.title("Transformed image")
+
+        plt.figure()
+        plt.imshow(B_abs, cmap="jet")
+        plt.title("Absolute value of Blaschke function")
+
+        plt.figure()
+        plt.imshow(B_arg, cmap="jet")
+        plt.title("Argument function")
+        plt.show()
+
+    return B_abs, B_arg, B
 
 """
 Values of the argument function of a Blaschke product.
@@ -342,10 +436,10 @@ def arg_inv_anim(a:torch.Tensor, n:int):
     if a.abs() >= 1:
         raise ValueError('The parameter should be inside the unit disc!')
 
-    t = torch.linspace(-PI, PI, n+1)[:-1]  # discretization
+    t = torch.linspace(-torch.pi, torch.pi, n+1)[:-1]  # discretization
 
     anim = 32
-    part = 2 * PI / n / anim
+    part = 2 * torch.pi / n / anim
     curr = 0
 
     plt.ion()  # Turn on interactive mode for animation
@@ -362,7 +456,7 @@ def arg_inv_anim(a:torch.Tensor, n:int):
         ax.cla()  # Clear the plot for the next frame
 
         curr += part
-        if curr > 2 * PI / n:
-            curr -= 2 * PI / n
+        if curr > 2 * torch.pi / n:
+            curr -= 2 * torch.pi / n
 
     plt.ioff()  # Turn off interactive mode
