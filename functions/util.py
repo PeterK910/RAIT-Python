@@ -158,8 +158,8 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     # Calculate the non-equidistant complex discretization
     m = len(mpoles)
-    z = torch.linspace(-np.pi, np.pi, m + 1)
-    t = arg_inv(mpoles, z, eps)  # Assuming arg_inv is a helper function
+    z = torch.linspace(-torch.pi, torch.pi, m + 1)
+    t = arg_inv(mpoles, z, eps)
 
     return t
 
@@ -768,3 +768,63 @@ def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.
         k[i - 1] = ddy[i - 1] / ((1 + dy[i - 1]**2)**(3/2))
 
     return k, dy, ddy
+
+import torch
+import matplotlib.pyplot as plt
+
+def rshow(*args):
+    """
+    Visualizes the given function, system, or systems.
+
+    Usage:
+        rshow(s)
+        rshow(s1, s2)
+
+    Parameters
+    ----------
+    *args : complex torch.Tensor
+        Complex matrices with rows as elements of a function system.
+        A system with one element is just a plain function.
+
+    Returns
+    -------
+    None
+        Plots of the real and imaginary parts of the elements of the function system.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if len(args) == 0:
+        raise ValueError('Please provide at least one parameter!')
+    elif len(args) == 1:
+        if not isinstance(args[0], torch.Tensor):
+            raise ValueError('The parameter should be a torch.Tensor!')
+        s1 = args[0]
+        n1, m1 = s1.shape
+    elif len(args) == 2:
+        if not isinstance(args[0], torch.Tensor) or not isinstance(args[1], torch.Tensor):
+            raise ValueError('The parameters should be torch.Tensors!')
+        s1, s2 = args
+        n1, m1 = s1.shape
+        n2, m2 = s2.shape
+        if n1 != n2 or m1 != m2:
+            raise ValueError('The matrices should be of equal size!')
+    else:
+        raise ValueError('Please provide one or two matrices!')
+
+    x = torch.linspace(0, 2 * math.pi, m1 + 1)[:-1]
+
+    for i in range(n1):
+        if len(args) == 1:
+            plt.subplot(n1, 1, i + 1)
+            plt.plot(x, s1[i].real, 'r', x, s1[i].imag, 'b', linewidth=1)
+        elif len(args) == 2:
+            plt.subplot(n1, 2, 2 * i + 1)
+            plt.plot(x, s1[i].real, 'r', x, s1[i].imag, 'b', linewidth=1)
+
+            plt.subplot(n1, 2, 2 * i + 2)
+            plt.plot(x, s2[i].real, 'r', x, s2[i].imag, 'b', linewidth=1)
+
+    plt.show()
