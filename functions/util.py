@@ -125,25 +125,44 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-"""
-Computes the non-equidistant complex discretization on the unit disc that refers to the given poles.
 
-:param mpoles: poles of the rational system
-:type mpoles: Tensor
-:param eps: Accuracy of the complex discretization on the unit disc, by default 1e-6.
-:type eps: float
 
-:returns: arguments of the poles
-:rtype: Tensor
-"""
-def discretize_dc(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
+def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+    """
+    Computes the non-equidistant complex discretization on the unit disc
+    that refers to the given poles.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles of the Blaschke product.
+    eps : float, optional
+        Accuracy of the complex discretization on the unit disc (default: 1e-6).
+
+    Returns
+    -------
+    torch.Tensor
+        Non-equidistant complex discretization.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    # Validate input parameters
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+
     if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError("Poles must be inside the unit disc")
+        raise ValueError('Poles must be inside the unit circle!')
 
-    m = mpoles.numel()
-    z = torch.linspace(-torch.pi, torch.pi, m+1)
-    t = arg_inv(mpoles, z, eps)
+    # Calculate the non-equidistant complex discretization
+    m = len(mpoles)
+    z = torch.linspace(-np.pi, np.pi, m + 1)
+    t = arg_inv(mpoles, z, eps)  # Assuming arg_inv is a helper function
+
     return t
+
 
 
 def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
@@ -357,16 +376,29 @@ def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
     r *= math.sqrt(1 - torch.abs(mpoles[n]) ** 2 / (1 - torch.conj(mpoles[n]) * z))
     return r
 
-"""
-Returns the multiplicity of all elements of the tensor 'mpoles'.
-
-:param mpoles: poles with arbitrary multiplicities
-:type mpoles: Tensor
-
-:returns: unique elements of 'mpoles' and their multiplicities
-:rtype: tuple[Tensor, Tensor]
-"""
 def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Returns the multiplicity of all elements of the vector 'mpoles'.
+
+    Parameters
+    ----------
+    mpoles : torch.Tensor
+        Poles with arbitrary multiplicities.
+
+    Returns
+    -------
+    torch.Tensor
+        Vector of the poles that contains a pole only once.
+    torch.Tensor
+        Mult(i) refers to the multiplicity of the ith pole.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
+        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
     unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
     return unique, counts
 
@@ -484,8 +516,6 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     
     return co
 
-import torch
-
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:
     """
     Converts the coefficients between the discrete systems base1 and base2.
@@ -547,9 +577,6 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
 
     return co
-
-import torch
-
 
 def periodize(v: torch.Tensor, alpha: float, draw: bool = False) -> torch.Tensor:
     """

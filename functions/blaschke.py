@@ -445,34 +445,48 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     
     return x
 
-"""
-Inverse images by the argument function of a Blaschke product. Unlike arg_inv, this is "continuous on IR".
+def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tensor:
+    """
+    Inverse images by the argument function of a Blaschke product.
 
-:param a: parameters of the Blaschke product, one-dimensional Tensor with complex numbers
-:type a: Tensor
-:param b: values in [-pi,pi), where the inverse images are needed, one-dimensional Tensor with floats
-:type b: Tensor
-:param epsi: required precision for the inverses (optional, default 1e-4)
-:type epsi: float
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    b : torch.Tensor
+        Values in [-pi, pi) whose inverse image is needed.
+    epsi : float, optional
+        Required precision for the inverses (default is 1e-4).
 
-:returns: the inverse images of the values in "b" by the argument function, one-dimensional Tensor with floats
-:rtype: Tensor
-"""
-def argdr_inv(a:torch.Tensor, b:torch.Tensor, epsi=1e-4) -> torch.Tensor:
-    if a.ndim != 1 or b.ndim != 1:
-        raise ValueError('Parameters should be 1-D tensors!')
+    Returns
+    -------
+    torch.Tensor
+        Inverse images by the argument function of the points in 'b'.
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError("Parameters 'a' should be a 1-dimensional torch.Tensor.")
+    
+    if not isinstance(b, torch.Tensor) or b.ndim != 1:
+        raise ValueError("Parameters 'b' should be a 1-dimensional torch.Tensor.")
+    
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Bad poles!')
+        raise ValueError("Bad poles! The parameter 'a' should be inside the unit disc.")
 
     if len(a) == 1:
         t = __argdr_inv_one(a, b)
     else:
         t = __argdr_inv_all(a, b, epsi)
     return t
-"""
-Inverse when the number of poles is 1
-"""
+
 def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor)->torch.Tensor:
+    """
+    Inverse when the number of poles is 1
+    """
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
@@ -482,11 +496,12 @@ def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor)->torch.Tensor:
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
     t = (t + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
     return t
-"""
-Inverse when the number of poles is greater than 1.
-Uses the bisection method with an enhanced order of calculation
-"""
+
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
+    """
+    Inverse when the number of poles is greater than 1.
+    Uses the bisection method with an enhanced order of calculation
+    """
     n = len(b)
     s = bisection_order(n) + 1
     x = torch.zeros(n+1)
@@ -527,24 +542,32 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 fvk = (argdr_fun(a, torch.tensor(xa))-torch.tensor(xa/2))/a.size(0)
             x[s[i, 0]] = xa
     return x[:n]
-"""
-Shows an animation related to the inverse of an equidistant discretization by an argument function
 
-:param a: parameter of the Blaschke product, complex number
-:type a: Tensor
-:param n: number of points in the discretization
-:type n: int
+def arg_inv_anim(a: torch.Tensor, n: int) -> None:
+    """
+    Shows an animation related to the inverse of an equidistant discretization
+    by an argument function.
 
-:returns: None
-"""
-def arg_inv_anim(a:torch.Tensor, n:int):
-    if not (a.numel() == 1 and a.dtype == torch.complex64 and type(n) == int):
-        raise ValueError('Please provide two numbers, first should be complex, second should be integer!')
-    if a.abs() >= 1:
-        raise ValueError('The parameter should be inside the unit disc!')
+    Parameters
+    ----------
+    a : torch.Tensor
+        The parameter of a Blaschke function.
+    n : int
+        Number of discretization points.
 
-    t = torch.linspace(-torch.pi, torch.pi, n+1)[:-1]  # discretization
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if not isinstance(a, torch.Tensor) or a.ndim != 1:
+        raise ValueError("The parameter 'a' should be a 1-dimensional torch.Tensor!")
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("The parameter 'n' should be a positive integer!")
+    if torch.max(torch.abs(a)) >= 1:
+        raise ValueError("The parameter 'a' should be inside the unit disc!")
 
+    t = torch.linspace(-np.pi, np.pi, n + 1)[:-1]  # Discretization
     anim = 32
     part = 2 * torch.pi / n / anim
     curr = 0

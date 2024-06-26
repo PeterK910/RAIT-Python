@@ -1,31 +1,45 @@
 import torch
 from util import discretize_dc, discretize_dr, subsample, dotdc, dotdr
-"""
-Generates the Malmquist-Takenaka system.
+def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
+    """
+    Generates the Malmquist-Takenaka system.
 
-:param length: number of points in case of uniform sampling
-:type length: int
-:param poles: poles of the system, one-dimensional Tensor with complex numbers
-:type poles: Tensor
+    Parameters
+    ----------
+    len : int
+        Number of points in case of uniform sampling.
+    poles : torch.Tensor
+        Poles of the rational system.
 
-:returns: the elements of the MT system at the uniform sampling points as row vectors
-:rtype: Tensor
+    Returns
+    -------
+    torch.Tensor
+        The elements of the MT system at the uniform sampling points as row vectors.
 
-"""
-def mt_system(length:int, poles:torch.Tensor)->torch.Tensor:
-    poles = poles.to(torch.complex64)
-    if poles.ndim != 1 or length < 2:
-        raise ValueError('Wrong parameters!')
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    # Validate input parameters
+    if not isinstance(len, int) or len < 2:
+        raise ValueError('len must be a positive integer greater than or equal to 2.')
+
+    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
+        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+
     if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit disc!')
+        raise ValueError('Poles must be inside the unit circle!')
 
-    mts = torch.zeros((poles.numel(), length), dtype=torch.complex64)
-    t = torch.linspace(-torch.pi, torch.pi, length+1)[:-1]
+    # Calculate the MT system elements
+    np, mp = poles.size(0), len
+    mts = torch.zeros(mp, len)
+    t = torch.linspace(-torch.pi, torch.pi, len + 1)[:-1]
     z = torch.exp(1j * t)
 
-    fi = torch.ones(length, dtype=torch.complex64)  # the product defining MT elements so far
-    for j in range(poles.numel()):
-        co = torch.sqrt(1 - torch.abs(poles[j])**2)
+    fi = torch.ones(len)  # The product defining MT elements so far
+    for j in range(mp):
+        co = torch.sqrt(1 - (torch.abs(poles[j]) ** 2))
         rec = 1 / (1 - torch.conj(poles[j]) * z)
         lin = co * rec
         bla = (z - poles[j]) * rec
