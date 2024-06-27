@@ -47,6 +47,7 @@ def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     k : torch.Tensor
         Matrix of coordinate pairs in R^2, rows are considered as
         vertices of the simplex.
+        Must be a 2D tensor with an even number of columns.
 
     Returns
     -------
@@ -64,7 +65,7 @@ def coords2params_all(k: torch.Tensor) -> torch.Tensor:
         raise ValueError('k must be a torch.Tensor.')
     
     if k.ndim != 2 or k.size(1) % 2 != 0:
-        raise ValueError('k must be a matrix with an even number of columns.')
+        raise ValueError('k must be a 2D tensor with an even number of columns.')
 
     # Initialize output tensor
     vertnum = k.size(0)

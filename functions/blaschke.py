@@ -261,9 +261,9 @@ def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-    #TODO: are function parameters really the same as in arg_fun?
     """
-    Calculate the continuous argument function on the interval IR for given 'a' and 't'.
+    Calculate the values of the argument function of a Blaschke product.
+    It is the same as arg_fun, but the output is continuous on IR.
 
     Parameters
     ----------
@@ -275,7 +275,8 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     Returns
     -------
     torch.Tensor
-        The result of the continuous argument function.
+        The values of the argument function at the points in t.
+        Continuous on IR.
     """
     # Validate input parameters
     if not isinstance(a, torch.Tensor) or a.ndim != 1:
