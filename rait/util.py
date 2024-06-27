@@ -243,9 +243,6 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 
     return s
 
-
-import torch
-
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes discrete real dot product of two functions in H^2(ID).
@@ -768,9 +765,6 @@ def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.
         k[i - 1] = ddy[i - 1] / ((1 + dy[i - 1]**2)**(3/2))
 
     return k, dy, ddy
-
-import torch
-import matplotlib.pyplot as plt
 
 def rshow(*args):
     """

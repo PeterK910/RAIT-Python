@@ -1,9 +1,9 @@
 import torch
 import matplotlib.pyplot as plt
+import numpy as np
 from PIL import Image
 
 from util import bisection_order
-import torch
 
 def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
@@ -127,10 +127,6 @@ def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
         b = b * (z - p) / (1 - torch.conj(p) * z)
 
     return b
-
-import torch
-import numpy as np
-
 
 def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
@@ -568,7 +564,7 @@ def arg_inv_anim(a: torch.Tensor, n: int) -> None:
     if torch.max(torch.abs(a)) >= 1:
         raise ValueError("The parameter 'a' should be inside the unit disc!")
 
-    t = torch.linspace(-np.pi, np.pi, n + 1)[:-1]  # Discretization
+    t = torch.linspace(-torch.pi, torch.pi, n + 1)[:-1]  # Discretization
     anim = 32
     part = 2 * torch.pi / n / anim
     curr = 0
