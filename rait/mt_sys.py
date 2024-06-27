@@ -1,5 +1,5 @@
 import torch
-from util import discretize_dc, discretize_dr, subsample, dotdc, dotdr
+
 def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     """
     Generates the Malmquist-Takenaka system.
@@ -47,6 +47,8 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
         fi = fi * bla
 
     return mts
+
+from util import discretize_dc
 
 def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -183,6 +185,8 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
         SRf += 2 * cUk[i] * torch.real(mts[:, i]) + 2 * cVk[i] * torch.imag(mts[:, i])
 
     return SRf
+
+from util import discretize_dr
 
 def mtdr_system(poles, eps=1e-6):
     """
@@ -326,6 +330,8 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
 
     return v
 
+from util import subsample, dotdc
+
 def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
     Calculate the mtdc-coefficients of 'signal' with respect to the 
@@ -441,6 +447,8 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
     v = coeffs @ mts
 
     return v
+
+from util import dotdr
 
 def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, torch.Tensor, float]:
     """

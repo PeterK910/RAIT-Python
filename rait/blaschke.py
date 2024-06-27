@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-from util import bisection_order
-
 def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Derivatives of the argument function of a Blaschke product.
@@ -368,6 +366,8 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     t = torch.fmod(t + torch.pi, 2 * torch.pi) - torch.pi  # Move it in [-pi, pi)
     
     return t
+
+from util import bisection_order
 
 def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """

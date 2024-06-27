@@ -4,11 +4,6 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
-from blaschke import arg_inv, argdr_inv
-from mt_sys import mt_system
-from biort_sys import biort_system
-from rat_sys import lf_system, mlf_system
-
 def addimag(v: torch.Tensor) -> torch.Tensor:
     """
     Calculates the imaginary part of v using FFT to be in Hardy space.
@@ -125,7 +120,7 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-
+from blaschke import arg_inv, argdr_inv
 
 def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
@@ -447,6 +442,10 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 
     # Squeeze to remove extra dimensions
     return y.squeeze()
+
+from mt_sys import mt_system
+from biort_sys import biort_system
+from rat_sys import lf_system, mlf_system
 
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """

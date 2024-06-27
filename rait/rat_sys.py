@@ -1,6 +1,6 @@
 import torch
-from util import multiplicity, discretize_dc, arg_inv, subsample, dotdc
-from biort_sys import biort_system, biortdc_system
+
+from util import multiplicity
 
 def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
     """
@@ -107,6 +107,8 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
             m += 1
     return m
 
+from util import discretize_dc
+
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
     Generates the discrete modified basic rational system.
@@ -199,6 +201,8 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
     v = torch.matmul(coeffs, mlf_system_elements)
 
     return v
+
+from biort_sys import biort_system
 
 def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]:
     """
@@ -305,6 +309,9 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     v = coeffs @ lf_sys
     
     return v
+
+from util import arg_inv, subsample, dotdc
+from biort_sys import biortdc_system
 
 def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
