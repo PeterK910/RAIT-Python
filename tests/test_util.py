@@ -1,6 +1,6 @@
 import torch
 import pytest
-from ..functions.util import addimag
+from ..rait.util import addimag
 
 def test_addimag():
     # Test case 1

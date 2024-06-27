@@ -48,7 +48,7 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
 
     return mts
 
-from util import discretize_dc
+from .util import discretize_dc
 
 def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -186,7 +186,7 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
     return SRf
 
-from util import discretize_dr
+from .util import discretize_dr
 
 def mtdr_system(poles, eps=1e-6):
     """
@@ -330,7 +330,7 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
 
     return v
 
-from util import subsample, dotdc
+from .util import subsample, dotdc
 
 def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
@@ -448,7 +448,7 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
 
     return v
 
-from util import dotdr
+from .util import dotdr
 
 def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, torch.Tensor, float]:
     """

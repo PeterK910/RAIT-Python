@@ -367,7 +367,7 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     return t
 
-from util import bisection_order
+from .util import bisection_order
 
 def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """

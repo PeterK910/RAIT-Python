@@ -28,8 +28,8 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-    if not torch.all(v.imag == 0):
-        raise ValueError('The vector is not real!')
+    if not v.dtype.is_floating_point:
+        raise ValueError('v must have real elements.')
 
     # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
@@ -120,7 +120,7 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-from blaschke import arg_inv, argdr_inv
+from .blaschke import arg_inv, argdr_inv
 
 def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
@@ -443,9 +443,9 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Squeeze to remove extra dimensions
     return y.squeeze()
 
-from mt_sys import mt_system
-from biort_sys import biort_system
-from rat_sys import lf_system, mlf_system
+from .mt_sys import mt_system
+from .biort_sys import biort_system
+from .rat_sys import lf_system, mlf_system
 
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
