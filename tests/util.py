@@ -25,11 +25,16 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     """
 
     # Validate input parameters
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+
+    if not v.dtype.is_floating_point:
+        raise TypeError('v must have real elements.')
+
     if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-    if not v.dtype.is_floating_point:
-        raise TypeError('v must have real elements.')
+
 
     # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
