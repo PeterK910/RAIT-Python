@@ -226,14 +226,23 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         If input parameters are invalid.
     """
     # Validate input parameters
-    if not isinstance(a, torch.Tensor) or a.ndim != 1:
-        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    if not isinstance(a, torch.Tensor):
+        raise TypeError('"a" must be a (1-dimensional) torch.Tensor.')
+    
+    if a.ndim != 1:
+        raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
 
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
-        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('"t" must be a (1-dimensional) torch.Tensor.')
+
+    if t.ndim != 1:
+        raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
 
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Elements of a must be inside the unit circle!')
+        raise ValueError('Elements of "a" must be inside the unit circle!')
+    
+    if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
+        raise ValueError('Elements of "t" must be in [-pi, pi).')
 
     # Calculate the argument function values
     b = torch.zeros(len(t))
@@ -367,7 +376,7 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     return t
 
-from .util import bisection_order
+from util import bisection_order
 
 def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """

@@ -125,7 +125,7 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-from .blaschke import arg_inv, argdr_inv
+from blaschke import arg_inv
 
 def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
@@ -163,7 +163,7 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     return t
 
-
+from blaschke import argdr_inv
 
 def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     """
