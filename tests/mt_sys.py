@@ -48,7 +48,7 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
 
     return mts
 
-from .util import discretize_dc
+
 
 def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -71,6 +71,8 @@ def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
+    from util import discretize_dc
+
     if not isinstance(mpoles, torch.Tensor):
         raise TypeError("mpoles must be a torch.Tensor")
     if not isinstance(eps, float):
@@ -186,7 +188,7 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
     return SRf
 
-from .util import discretize_dr
+
 
 def mtdr_system(poles, eps=1e-6):
     """
@@ -211,6 +213,8 @@ def mtdr_system(poles, eps=1e-6):
     ValueError
         If any of the poles have a magnitude greater than or equal to 1.
     """
+    from util import discretize_dr
+
     if torch.max(torch.abs(poles)) >= 1:
         raise ValueError('Bad poles! Poles must have magnitudes less than 1.')
 
@@ -330,7 +334,7 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
 
     return v
 
-from .util import subsample, dotdc
+
 
 def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
@@ -359,6 +363,7 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
     ValueError
         If input parameters are invalid.
     """
+    from util import subsample, dotdc, discretize_dc
 
     # Validate input parameters
     if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
@@ -448,7 +453,7 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
 
     return v
 
-from .util import dotdr
+
 
 def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, torch.Tensor, float]:
     """
@@ -479,6 +484,7 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     ValueError
         If input parameters are invalid.
     """
+    from util import discretize_dr, subsample, dotdr
 
     # Validate input parameters
     if not isinstance(v, torch.Tensor) or v.ndim != 1:

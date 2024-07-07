@@ -2,7 +2,7 @@ import torch
 from math import factorial
 from scipy.special import binom
 
-from .util import multiplicity
+
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -32,6 +32,8 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
+    from util import multiplicity
+
     np, mp = mpoles.size()
     if np != 1 or length < 2:
         raise ValueError('Wrong parameters!')
@@ -190,7 +192,7 @@ def __ro(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -
     v *= (-1) ** s * factorial(s)
     return v
 
-from .util import discretize_dc
+
 
 def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -214,6 +216,8 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit circle.
     """
+    from util import discretize_dc, multiplicity
+
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError('Poles must be inside the unit circle!')
     
@@ -230,7 +234,7 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     return bts
 
-from .rat_sys import mlf_system
+
 
 def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float]:
     """
@@ -257,7 +261,8 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     ValueError
         If input parameters are invalid.
     """
-    
+    from rat_sys import mlf_system
+
     # Validate input parameters
     if not isinstance(v, torch.Tensor) or v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
@@ -390,8 +395,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
 
     return v
 
-from .util import subsample, dotdc
-from .rat_sys import mlfdc_system
+
 
 def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
@@ -420,7 +424,8 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     ValueError
         If input parameters are invalid.
     """
-
+    from util import discretize_dc, subsample, dotdc
+    from rat_sys import mlfdc_system
     # Validate input parameters
     if not isinstance(v, torch.Tensor) or v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')

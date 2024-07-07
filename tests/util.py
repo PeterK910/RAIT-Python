@@ -125,7 +125,7 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-from blaschke import arg_inv
+
 
 def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
@@ -149,6 +149,8 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from blaschke import arg_inv
+
     # Validate input parameters
     if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
         raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
@@ -163,7 +165,7 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     return t
 
-from blaschke import argdr_inv
+
 
 def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     """
@@ -186,6 +188,8 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
+    from blaschke import argdr_inv
+
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError("Poles must be inside the unit disc")
 
@@ -448,9 +452,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Squeeze to remove extra dimensions
     return y.squeeze()
 
-from .mt_sys import mt_system
-from .biort_sys import biort_system
-from .rat_sys import lf_system, mlf_system
+
 
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
@@ -479,7 +481,10 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     ValueError
         If input parameters are invalid.
     """
-    
+    from mt_sys import mt_system
+    from biort_sys import biort_system
+    from rat_sys import lf_system, mlf_system
+
     # Validate input parameters
     if poles.size(0) != 1:
         raise ValueError("poles must be a 1D tensor")
@@ -490,6 +495,18 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     
     if coeffs.size(0) != 1:
         raise ValueError('Coeffs should be row vector!')
+    
+    if not isinstance(base1, str):
+        raise TypeError('Base1 must be a string.')
+    
+    if not isinstance(base2, str):
+        raise TypeError('Base2 must be a string.')
+    
+    if base1 not in ['lf', 'mlf', 'biort', 'mt']:
+        raise ValueError('Invalid system type for base1! Choose from lf, mlf, biort, mt.')
+    
+    if base2 not in ['lf', 'mlf', 'biort', 'mt']:
+        raise ValueError('Invalid system type for base2! Choose from lf, mlf, biort, mt.')
     
     # Helper function
     def get_system(base, length, poles):
@@ -544,6 +561,9 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     ValueError
         If input parameters are invalid.
     """
+    from rat_sys import mlfdc_system
+    from biort_sys import biortdc_system
+    from mt_sys import mtdc_system
 
     # Validate input parameters
     if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
@@ -567,9 +587,20 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     if base2 not in ['mlfdc', 'biortdc', 'mtdc']:
         raise ValueError('Invalid system type for base2! Choose from mlfdc, biortdc, mtdc.')
     
+    # Helper function
+    def get_system(base, mpoles, eps):
+        if base == 'mlfdc':
+            return mlfdc_system(mpoles, eps)
+        elif base == 'biortdc':
+            return biortdc_system(mpoles, eps)
+        elif base == 'mtdc':
+            return mtdc_system(mpoles, eps)
+        else:
+            raise ValueError('Invalid system type! Choose from mlfdc, biortdc, mtdc.')
+
     # Generate systems based on 'base1' and 'base2'
-    g1 = globals()[f'{base1}_system'](poles, eps)
-    g2 = globals()[f'{base2}_system'](poles, eps)
+    g1 = get_system(base1, poles, eps)
+    g2 = get_system(base2, poles, eps)
 
     # Convert coefficients between systems
     F = g1 @ g1.t() / coeffs.shape[0]

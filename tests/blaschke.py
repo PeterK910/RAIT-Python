@@ -247,7 +247,9 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     # Calculate the argument function values
     b = torch.zeros(len(t))
     for i in range(len(a)):
+        print(f"i = {i}")
         b += __arg_fun_one(a[i], t)
+        print(f"b = {b}")
     b /= len(a)
 
     return b
@@ -256,11 +258,15 @@ def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     r = abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
-
+    
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
+    print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
+    
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
+    print(f"b1 = {b}")
     b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
+    print(f"b2 = {b}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -376,7 +382,7 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     return t
 
-from util import bisection_order
+
 
 def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """
@@ -396,6 +402,8 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
+    from util import bisection_order
+
     # Validate input parameters
     if not isinstance(a, torch.Tensor) or a.ndim != 1:
         raise ValueError('a must be a 1-dimensional torch.Tensor.')
@@ -508,6 +516,8 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     Inverse when the number of poles is greater than 1.
     Uses the bisection method with an enhanced order of calculation
     """
+    from util import bisection_order
+
     n = len(b)
     s = bisection_order(n) + 1
     x = torch.zeros(n+1)

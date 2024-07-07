@@ -1,7 +1,5 @@
 import torch
 
-from .util import multiplicity
-
 def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
     """
     Generates the modified basic rational function system defined by mpoles.
@@ -25,6 +23,8 @@ def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
+    from util import multiplicity
+
     np, mp = mpoles.size()
     if np != 1 or length < 2:
         raise ValueError('Wrong parameters!')
@@ -107,8 +107,6 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
             m += 1
     return m
 
-from .util import discretize_dc
-
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
     Generates the discrete modified basic rational system.
@@ -131,6 +129,8 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
+    from util import multiplicity, discretize_dc
+
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError("Poles must be inside the unit disc")
 
@@ -202,7 +202,7 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
 
     return v
 
-from .biort_sys import biort_system
+
 
 def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]:
     """
@@ -227,6 +227,8 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     ValueError
         If input parameters are incorrect or if poles are outside the valid range.
     """
+
+    from biort_sys import biort_system
     
     # Validate input parameters
     if not isinstance(v, torch.Tensor) or v.dim() != 1:
@@ -310,9 +312,6 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     
     return v
 
-from .util import arg_inv, subsample, dotdc
-from .biort_sys import biortdc_system
-
 def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
     Calculates the mlfdc-coefficients of 'signal' with respect to the
@@ -340,6 +339,9 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
     ValueError
         If input parameters are invalid.
     """
+    from blaschke import arg_inv
+    from util import subsample, dotdc
+    from biort_sys import biortdc_system
 
     # Validate input parameters
     if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
