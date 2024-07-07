@@ -16,6 +16,9 @@ def test_arg_fun():
     expected_result = torch.tensor([0,0.5,1,1.5])
     assert torch.allclose(arg_fun(a, t), expected_result)
 
+    a = torch.tensor([-0.9,0,0.9])
+    t = torch.tensor([-torch.pi,0.2,0.3,0])
+
     #input validation
     regex = re.compile(re.escape('"a" must be a (1-dimensional) torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
