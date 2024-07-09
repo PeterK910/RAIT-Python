@@ -8,7 +8,7 @@ def test_arg_fun():
     
     a = torch.tensor([0.5, 0.5, 0.5])
     t = torch.tensor([0.1, 0.2, 0.3])
-    expected_result = torch.tensor([0.2980, 0.5848, 0.8514])
+    expected_result = torch.tensor([0.2980, 0.5848, 0.8514], dtype=torch.float64)
     assert torch.allclose(arg_fun(a, t), expected_result)
 
     a = torch.tensor([0,0,0])
@@ -18,6 +18,8 @@ def test_arg_fun():
 
     a = torch.tensor([-0.9,0,0.9])
     t = torch.tensor([-torch.pi,0.2,0.3,0])
+    expected_result = torch.tensor([ 3.1416e+00,  7.9532e-01,  9.2910e-01, -7.4015e-16])
+    assert torch.allclose(arg_fun(a, t), expected_result)
 
     #input validation
     regex = re.compile(re.escape('"a" must be a (1-dimensional) torch.Tensor.'))

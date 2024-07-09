@@ -244,18 +244,25 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
         raise ValueError('Elements of "t" must be in [-pi, pi).')
 
+    # convert a,t to float64
+    if a.dtype != torch.float64:
+        print(f"Converting a to float64")
+        a = a.to(torch.float64)
+    if t.dtype != torch.float64:
+        print(f"Converting t to float64")
+        t = t.to(torch.float64)
+
     # Calculate the argument function values
-    b = torch.zeros(len(t))
+    b = torch.zeros(len(t), dtype=torch.float64)
     for i in range(len(a)):
-        print(f"i = {i}")
         b += __arg_fun_one(a[i], t)
-        print(f"b = {b}")
+        print(f"b = {b}, dtype = {b.dtype}")
     b /= len(a)
 
     return b
 
 def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-    r = abs(a)
+    r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
     
@@ -264,9 +271,9 @@ def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    print(f"b1 = {b}")
+    print(f"b1 = {b}, type = {b.dtype}")
     b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
-    print(f"b2 = {b}")
+    print(f"b2 = {b}, type = {b.dtype}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
