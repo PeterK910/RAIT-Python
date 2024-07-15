@@ -227,36 +227,35 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     # Validate input parameters
     if not isinstance(a, torch.Tensor):
-        raise TypeError('"a" must be a (1-dimensional) torch.Tensor.')
+        raise TypeError('"a" must be a torch.Tensor.')
+    
+    if a.dtype != torch.complex64:
+        raise TypeError('"a" must be a complex torch.Tensor.')
     
     if a.ndim != 1:
         raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(a)) >= 1:
+        raise ValueError('Elements of "a" must be inside the unit circle!')
+    
 
     if not isinstance(t, torch.Tensor):
-        raise TypeError('"t" must be a (1-dimensional) torch.Tensor.')
+        raise TypeError('"t" must be a torch.Tensor.')
+    
+    if t.dtype != torch.float64:
+        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
 
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
-
-    if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Elements of "a" must be inside the unit circle!')
     
     if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
         raise ValueError('Elements of "t" must be in [-pi, pi).')
 
-    # convert a,t to float64
-    if a.dtype != torch.float64:
-        print(f"Converting a to float64")
-        a = a.to(torch.float64)
-    if t.dtype != torch.float64:
-        print(f"Converting t to float64")
-        t = t.to(torch.float64)
-
     # Calculate the argument function values
-    b = torch.zeros(len(t), dtype=torch.float64)
+    b = torch.zeros(len(t), dtype=torch.complex64)
     for i in range(len(a)):
         b += __arg_fun_one(a[i], t)
-        print(f"b = {b}, dtype = {b.dtype}")
+        #print(f"b = {b}, dtype = {b.dtype}")
     b /= len(a)
 
     return b
@@ -267,13 +266,13 @@ def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     mu = (1 + r) / (1 - r)
     
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-    print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
+    #print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
     
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    print(f"b1 = {b}, type = {b.dtype}")
+    #print(f"b1 = {b}, type = {b.dtype}")
     b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
-    print(f"b2 = {b}, type = {b.dtype}")
+    #print(f"b2 = {b}, type = {b.dtype}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
