@@ -2,10 +2,11 @@ import torch
 import pytest
 import re
 
-from .blaschke import arg_fun
+
 #arg_fun test
 def test_arg_fun():
-    
+    from .blaschke import arg_fun
+
     a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
     t = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
     expected_result = torch.tensor([0.298025, 0.584755, 0.851365], dtype=torch.complex64)
@@ -73,6 +74,8 @@ def test_arg_fun():
         arg_fun(a, t)
     except ValueError:
         pytest.fail('arg_fun raised ValueError unexpectedly!')
-    
+   
+def test_argdr_fun():
+    from .blaschke import argdr_fun
 
     
