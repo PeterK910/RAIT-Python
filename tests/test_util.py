@@ -1,9 +1,36 @@
 import torch
 import pytest
+import re 
 
-from .util import addimag
+def test_check_poles():
+    from .util import check_poles
+    #a
+    regex = re.compile(re.escape('poles must be a torch.Tensor.'))
+    with pytest.raises(TypeError, match=regex):
+        poles = [1, 2, 3]
+        check_poles(poles)
+
+    regex = re.compile(re.escape('poles must be complex numbers.'))
+    with pytest.raises(TypeError, match=regex):
+        poles = torch.tensor([1.0, 2.0, 3.0])
+        check_poles(poles)
+
+    regex = re.compile(re.escape('poles must be a 1-dimensional torch.Tensor.'))
+    with pytest.raises(ValueError, match=regex):
+        poles = torch.tensor([[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]], dtype=torch.complex64)
+        check_poles(poles)
+
+    regex = re.compile(re.escape('poles must be inside the unit circle!'))
+    with pytest.raises(ValueError, match=regex):
+        poles = torch.tensor([0.5, 0.5, 1], dtype=torch.complex64)
+        check_poles(poles)
+
+
+
+
 #addimag test
 def test_addimag():
+    from .util import addimag
     v1 = torch.tensor([1.0, 2.0, 3.0])
     assert torch.equal(addimag(v1), torch.tensor([2.+0.j, 2.+0.j, 2.+0.j]))
     v2 = torch.tensor([1.0, 1.0, 1.0, 1.0])

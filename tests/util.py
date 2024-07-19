@@ -4,6 +4,34 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
+def check_poles(poles: torch.Tensor):
+    """
+    Checks if the poles are inside the unit circle.
+
+    Parameters
+    ----------
+    poles : torch.Tensor
+        Poles of the Blaschke product.
+        It must be a 1-dimensional torch.Tensor with complex elements.
+        It must be inside the unit circle (edge exclusive).
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if not isinstance(poles, torch.Tensor):
+        raise TypeError('poles must be a torch.Tensor.')
+    
+    if poles.dtype != torch.complex64:
+        raise TypeError('poles must be complex numbers.')
+    
+    if poles.ndim != 1:
+        raise ValueError('poles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('poles must be inside the unit circle!')
+
 def addimag(v: torch.Tensor) -> torch.Tensor:
     """
     Calculates the imaginary part of v using FFT to be in Hardy space.
