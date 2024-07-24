@@ -121,16 +121,18 @@ def bisection_order(n: int) -> torch.Tensor:
         raise ValueError('n must be a non-negative integer.')
 
     # Initialize the matrix
-    bo = torch.zeros(n + 1, 3)
+    bo = torch.zeros(n + 1, 3, dtype=torch.int64)
     bo[0, :] = torch.tensor([0, -1, -1])
     bo[1, :] = torch.tensor([n, -1, -1])
     bo[2, :] = torch.tensor([n // 2, 0, n])
 
-    watch = 3  # Column currently being watched
-    fill = 4  # Where to fill the new values
+
+    watch = 2  # Column currently being watched
+    fill = 3  # Where to fill the new values
 
     # Fill the matrix with the ordering
-    while fill <= n + 1:
+    while fill < n + 1:
+
         # Get child and parents
         ch = bo[watch, 0]
         p1 = bo[watch, 1]

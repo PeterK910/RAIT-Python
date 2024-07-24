@@ -25,9 +25,6 @@ def test_check_poles():
         poles = torch.tensor([0.5, 0.5, 1], dtype=torch.complex64)
         check_poles(poles)
 
-
-
-
 #addimag test
 def test_addimag():
     from .util import addimag
@@ -48,3 +45,19 @@ def test_addimag():
     with pytest.raises(ValueError, match="v must be a 1-dimensional torch.Tensor."):
         v6 = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
         addimag(v6)
+
+def test_bisection_order():
+    from .util import bisection_order
+    result = bisection_order(4)
+    expected_result = torch.tensor(
+        [[ 0, -1, -1],
+        [ 4, -1, -1],
+        [ 2,  0,  4],
+        [ 1,  0,  2],
+        [ 3,  2,  4]], dtype=torch.int32)
+    assert torch.equal(result, expected_result)
+    #input validation
+    with pytest.raises(ValueError, match="n must be a non-negative integer."):
+        bisection_order(5.3)
+    with pytest.raises(ValueError, match="n must be a non-negative integer."):
+        bisection_order(-1)
