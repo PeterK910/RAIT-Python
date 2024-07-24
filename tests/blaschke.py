@@ -516,15 +516,33 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     ValueError
         If input parameters are invalid.
     """
-    if not isinstance(a, torch.Tensor) or a.ndim != 1:
-        raise ValueError("Parameters 'a' should be a 1-dimensional torch.Tensor.")
+    # Validate input parameters
     
-    if not isinstance(b, torch.Tensor) or b.ndim != 1:
-        raise ValueError("Parameters 'b' should be a 1-dimensional torch.Tensor.")
+    if not isinstance(a, torch.Tensor):
+        raise TypeError('"a" must be a torch.Tensor.')
+    
+    if a.dtype != torch.complex64:
+        raise TypeError('"a" must be a complex torch.Tensor.')
+    
+    if a.ndim != 1:
+        raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
     
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError("Bad poles! The parameter 'a' should be inside the unit disc.")
+        raise ValueError('Elements of "a" must be inside the unit circle!')
+    
 
+    if not isinstance(b, torch.Tensor):
+        raise TypeError('"t" must be a torch.Tensor.')
+    
+    if b.dtype != torch.float64:
+        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+
+    if b.ndim != 1:
+        raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
+    
+    if torch.min(b) < -torch.pi or torch.max(b) >= torch.pi:
+        raise ValueError('Elements of "t" must be in [-pi, pi).')
+    
     if len(a) == 1:
         t = __argdr_inv_one(a, b)
     else:
