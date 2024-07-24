@@ -294,18 +294,46 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         Continuous on IR.
     """
     # Validate input parameters
-    if not isinstance(a, torch.Tensor) or a.ndim != 1:
-        raise ValueError('a must be a 1-dimensional torch.Tensor.')
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
-        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    
+    if not isinstance(a, torch.Tensor):
+        raise TypeError('"a" must be a torch.Tensor.')
+    
+    if a.dtype != torch.complex64:
+        raise TypeError('"a" must be a complex torch.Tensor.')
+    
+    if a.ndim != 1:
+        raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(a)) >= 1:
+        raise ValueError('Elements of "a" must be inside the unit circle!')
+    
+
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('"t" must be a torch.Tensor.')
+    
+    if t.dtype != torch.float64:
+        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+
+    if t.ndim != 1:
+        raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
+    
+    if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
+        raise ValueError('Elements of "t" must be in [-pi, pi).')
     
     # Initialize the result tensor
-    b = torch.zeros_like(t)
+    b = torch.zeros(len(t), dtype=torch.complex64)
     
     # Calculate the continuous argument function
     for j in range(t.size(0)):
         for i in range(a.size(0)):
-            bs = arg_fun(a[i], t[j])
+            #wrapping parameters so that ndim is 1 instead of 0 for arg_fun
+            tmp_a = torch.tensor([a[i]])
+            tmp_t = torch.tensor([t[j]])
+            bs = arg_fun(tmp_a, tmp_t)
+
+            #unwrapping the result
+            bs = bs[0]
+
             b[j] += bs + 2 * torch.pi * torch.floor((t[j] + torch.pi) / (2 * torch.pi))
     
     return b
