@@ -9,14 +9,14 @@ def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    a : torch.Tensor
-        Parameters of the Blaschke product.
-    t : torch.Tensor
-        Values in [-pi, pi), where the function values are needed.
+    a : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
+    t : torch.Tensor, dtype=torch.float64
+        Values in [-pi, pi), where the function values are needed. Must be a 1-dimensional torch.Tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         The derivatives of the argument function at the points in t.
 
     Raises
@@ -26,17 +26,34 @@ def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
 
     # Validate input parameters
-    if not isinstance(a, torch.Tensor) or a.ndim != 1:
-        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    if not isinstance(a, torch.Tensor):
+        raise TypeError('"a" must be a torch.Tensor.')
     
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
-        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if a.dtype != torch.complex64:
+        raise TypeError('"a" must be a complex torch.Tensor.')
+    
+    if a.ndim != 1:
+        raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
     
     if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Elements of a must be inside the unit circle!')
+        raise ValueError('Elements of "a" must be inside the unit circle!')
+    
+
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('"t" must be a torch.Tensor.')
+    
+    if t.dtype != torch.float64:
+        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+
+    if t.ndim != 1:
+        raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
+    
+    if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
+        raise ValueError('Elements of "t" must be in [-pi, pi).')
+    
 
     # Calculate derivatives
-    bd = torch.zeros_like(t)
+    bd = torch.zeros_like(t, dtype=torch.float64)
     
     for i in range(a.size(0)):
         bd += __arg_der_one(a[i], t)
@@ -499,16 +516,16 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
 
     Parameters
     ----------
-    a : torch.Tensor
-        Parameters of the Blaschke product.
-    b : torch.Tensor
-        Values in [-pi, pi) whose inverse image is needed.
+    a : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
+    b : torch.Tensor, dtype=torch.float64
+        Values in [-pi, pi) whose inverse image is needed. Must be a 1-dimensional torch.Tensor.
     epsi : float, optional
         Required precision for the inverses (default is 1e-4).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         Inverse images by the argument function of the points in 'b'.
 
     Raises
@@ -532,16 +549,16 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     
 
     if not isinstance(b, torch.Tensor):
-        raise TypeError('"t" must be a torch.Tensor.')
+        raise TypeError('"b" must be a torch.Tensor.')
     
     if b.dtype != torch.float64:
-        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+        raise TypeError('"b" must be a torch.Tensor with float64 dtype.')
 
     if b.ndim != 1:
-        raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
+        raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
     
     if torch.min(b) < -torch.pi or torch.max(b) >= torch.pi:
-        raise ValueError('Elements of "t" must be in [-pi, pi).')
+        raise ValueError('Elements of "b" must be in [-pi, pi).')
     
     if len(a) == 1:
         t = __argdr_inv_one(a, b)
