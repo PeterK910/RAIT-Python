@@ -61,3 +61,13 @@ def test_bisection_order():
         bisection_order(5.3)
     with pytest.raises(ValueError, match="n must be a non-negative integer."):
         bisection_order(-1)
+
+def test_multiplicity():
+    from .util import multiplicity
+
+    a = torch.tensor([0,0,0.5,0,-0.5j], dtype=torch.complex64)
+    spoles, mult = multiplicity(a)
+    expected_spoles = torch.tensor([0, 0.5, -0.5j], dtype=torch.complex64)
+    expected_mult = torch.tensor([3, 1, 1], dtype=torch.int32)
+    assert torch.allclose(spoles, expected_spoles)
+    assert torch.equal(mult, expected_mult)

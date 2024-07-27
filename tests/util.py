@@ -413,8 +413,8 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles with arbitrary multiplicities.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles with arbitrary multiplicities. It must be a 1D tensor.
 
     Returns
     -------
@@ -428,10 +428,35 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     ValueError
         If input parameters are invalid.
     """
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
-    unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
-    return unique, counts
+    check_poles(mpoles)
+    poles = mpoles
+    mult = torch.ones_like(mpoles, dtype = torch.int32) #mult is the vector of multiplicities of poles
+    spoles = torch.zeros_like(mpoles, dtype = torch.complex64) #spoles is the vector of poles that contains a pole only once
+    
+    spoles_index=0
+
+    while poles.numel() > 0:
+        #indexes of the poles that are equal to the first element in poles, including the first element
+        ind = [0]
+
+        for i in range (1,poles.numel()):
+            #instead of exact comparison, torch.allclose is used to compare the poles
+            if torch.allclose(poles[i], poles[0]):
+                print(f"found match")
+                ind.append(i)
+                mult[spoles_index] += 1
+        spoles[spoles_index] = poles[0]
+
+        #remove the poles that are equal to the first pole INCLUDING the first pole
+        for i in range(len(ind)-1,-1,-1):#remove backwards to avoid index errors
+            poles = torch.cat((poles[0:ind[i]],poles[ind[i]+1:]))
+        spoles_index += 1
+        
+    
+    spoles = spoles[0:spoles_index]
+    mult = mult[0:spoles_index]
+    return spoles, mult
+
 
 def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     """
