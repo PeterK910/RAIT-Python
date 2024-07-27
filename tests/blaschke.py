@@ -210,14 +210,14 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    a : torch.Tensor
-        Parameters of the Blaschke product.
-    t : torch.Tensor
-        Values in [-pi, pi), where the function values are needed.
+    a : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
+    t : torch.Tensor, dtype=torch.float64
+        Values in [-pi, pi), where the function values are needed. Must be a 1-dimensional torch.Tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The values of the argument function at the points in t.
 
     Raises
@@ -282,14 +282,14 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    a : torch.Tensor
-        Parameters of the Blaschke product.
-    t : torch.Tensor
-        Values in [-pi, pi), where the function values are needed.
+    a : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
+    t : torch.Tensor, dtype=torch.float64
+        Values in [-pi, pi), where the function values are needed. Must be a 1-dimensional torch.Tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The values of the argument function at the points in t.
         Continuous on IR.
     """
@@ -572,21 +572,24 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
 
     n = len(b)
     s = bisection_order(n) + 1
+    #print(s)
     x = torch.zeros(n+1)
-    for i in range(1, n+2):
-        if i == 1:
+    #print(x)
+    for i in range(n+1):
+        if i == 0:
             v1 = -torch.pi
             v2 = torch.pi
             fv1 = -torch.pi  # fv1 <= y
             fv2 = torch.pi   # fv2 >= y
-        elif i == 2:
-            x[n] = x[0] + 2 * torch.pi  # x(s(2,1))
+        elif i == 1:
+            x[n] = x[0] + 2 * torch.pi  # x(s(1,1))
             continue
         else:
             v1 = x[s[i, 1]]
             v2 = x[s[i, 2]]
             fv1 = (argdr_fun(a, v1)-v1/2)/a.size(0)
             fv2 = (argdr_fun(a, v2)-v2/2)/a.size(0)
+            print(f"fv1.dtype = {fv1.dtype}, fv2.dtype = {fv2.dtype}")
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -597,7 +600,9 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             continue
         else:
             xa = (v1 + v2) / 2
-            fvk = (argdr_fun(a, torch.tensor(xa))-torch.tensor(xa/2))/a.size(0)
+            #convert to float64 for argdr_fun
+            xa = torch.tensor(xa, dtype=torch.float64)
+            fvk = (argdr_fun(a, x)-torch.tensor(xa/2))/a.size(0)
             while torch.abs(fvk - ba) > epsi:
                 if fvk == ba:
                     x[s[i, 0]] = xa

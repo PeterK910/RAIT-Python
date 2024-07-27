@@ -121,7 +121,7 @@ def bisection_order(n: int) -> torch.Tensor:
         raise ValueError('n must be a non-negative integer.')
 
     # Initialize the matrix
-    bo = torch.zeros(n + 1, 3, dtype=torch.int64)
+    bo = torch.zeros(n + 1, 3, dtype=torch.int32)
     bo[0, :] = torch.tensor([0, -1, -1])
     bo[1, :] = torch.tensor([n, -1, -1])
     bo[2, :] = torch.tensor([n // 2, 0, n])
