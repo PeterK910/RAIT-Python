@@ -430,9 +430,10 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """
     check_poles(mpoles)
     poles = mpoles
-    mult = torch.ones_like(mpoles, dtype = torch.int32) #mult is the vector of multiplicities of poles
-    spoles = torch.zeros_like(mpoles, dtype = torch.complex64) #spoles is the vector of poles that contains a pole only once
-    
+    #the tensor of multiplicities of poles
+    mult = torch.ones_like(mpoles, dtype = torch.int32) 
+    #the tensor of poles that contains each pole only once
+    spoles = torch.zeros_like(mpoles, dtype = torch.complex64) 
     spoles_index=0
 
     while poles.numel() > 0:
@@ -442,7 +443,6 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         for i in range (1,poles.numel()):
             #instead of exact comparison, torch.allclose is used to compare the poles
             if torch.allclose(poles[i], poles[0]):
-                print(f"found match")
                 ind.append(i)
                 mult[spoles_index] += 1
         spoles[spoles_index] = poles[0]
