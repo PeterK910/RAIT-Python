@@ -273,3 +273,7 @@ def test_arg_der():
         arg_der(a, t)
     except ValueError:
         pytest.fail('argdr_fun raised ValueError unexpectedly!')
+
+def test_arg_inv():
+    from .blaschke import arg_inv
+    #todo: will likely have the same problem as argdr_inv. When latter is solved, copy paste code AND test to here
