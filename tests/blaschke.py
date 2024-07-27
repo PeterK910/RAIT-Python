@@ -217,7 +217,7 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor, dtype=torch.complex64
+    torch.Tensor, dtype=torch.float64
         The values of the argument function at the points in t.
 
     Raises
@@ -252,7 +252,7 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         raise ValueError('Elements of "t" must be in [-pi, pi).')
 
     # Calculate the argument function values
-    b = torch.zeros(len(t), dtype=torch.complex64)
+    b = torch.zeros(len(t), dtype=torch.float64)
     for i in range(len(a)):
         b += __arg_fun_one(a[i], t)
         #print(f"b = {b}, dtype = {b.dtype}")
@@ -289,7 +289,7 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor, dtype=torch.complex64
+    torch.Tensor, dtype=torch.float64
         The values of the argument function at the points in t.
         Continuous on IR.
     """
@@ -321,7 +321,7 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         raise ValueError('Elements of "t" must be in [-pi, pi).')
     
     # Initialize the result tensor
-    b = torch.zeros(len(t), dtype=torch.complex64)
+    b = torch.zeros(len(t), dtype=torch.float64)
     
     # Calculate the continuous argument function
     for j in range(t.size(0)):
@@ -571,11 +571,13 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     from util import bisection_order
 
     n = len(b)
-    s = bisection_order(n) + 1
-    #print(s)
-    x = torch.zeros(n+1)
-    #print(x)
+    print(n)
+    s = bisection_order(n)
+    print(s)
+    x = torch.zeros(n+1, dtype=torch.float64)
+    print(x)
     for i in range(n+1):
+        print(f"i = {i}")
         if i == 0:
             v1 = -torch.pi
             v2 = torch.pi
@@ -585,10 +587,25 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             x[n] = x[0] + 2 * torch.pi  # x(s(1,1))
             continue
         else:
+            print(f"x=\n{x}")
+            
             v1 = x[s[i, 1]]
+            print(f"s[i,1] = {s[i, 1]}")
+            print(f"v1 = {v1}")
             v2 = x[s[i, 2]]
+            print(f"s[i,2] = {s[i, 2]}")
+            print(f"v2 = {v2}")
+            
+            #convert v1 and v2 to a format that argdr_fun can accept
+            v1 = torch.tensor([v1], dtype=torch.float64)
+            v2 = torch.tensor([v2], dtype=torch.float64)
+
             fv1 = (argdr_fun(a, v1)-v1/2)/a.size(0)
             fv2 = (argdr_fun(a, v2)-v2/2)/a.size(0)
+
+            #unwrapping the result
+            fv1 = fv1[0]
+            fv2 = fv2[0]
             print(f"fv1.dtype = {fv1.dtype}, fv2.dtype = {fv2.dtype}")
 
         ba = b[s[i, 0]]
@@ -600,9 +617,17 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             continue
         else:
             xa = (v1 + v2) / 2
-            #convert to float64 for argdr_fun
-            xa = torch.tensor(xa, dtype=torch.float64)
-            fvk = (argdr_fun(a, x)-torch.tensor(xa/2))/a.size(0)
+            #convert xa to a format that argdr_fun can accept
+            xa = torch.tensor([xa], dtype=torch.float64)
+            #print(f"xa.ndim = {xa.ndim}, xa.dtype = {xa.dtype}")
+
+            fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
+
+            #unwrapping the result
+            fvk = fvk[0]
+
+            #print(f"fvk.dtype = {fvk.dtype}, fvk = {fvk}")
+            #print("ok1")
             while torch.abs(fvk - ba) > epsi:
                 if fvk == ba:
                     x[s[i, 0]] = xa
@@ -612,7 +637,12 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 else:
                     v2 = xa
                 xa = (v1 + v2) / 2
-                fvk = (argdr_fun(a, torch.tensor(xa))-torch.tensor(xa/2))/a.size(0)
+                #convert xa to a format that argdr_fun can accept
+                xa = torch.tensor([xa], dtype=torch.float64)
+                fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
+                #unwrapping the result
+                fvk = fvk[0]
+                #print("ok2")
             x[s[i, 0]] = xa
     return x[:n]
 
