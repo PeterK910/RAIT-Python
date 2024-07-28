@@ -17,7 +17,7 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     length : int
-        Number of points in case of uniform sampling.
+        Number of points in case of uniform sampling. Must be at least 2.
     mpoles : torch.Tensor
         Poles of the biorthogonal system.
 
@@ -32,15 +32,16 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from util import multiplicity
+    from .util import check_poles, multiplicity
+    
+    if type(length) != int:
+        raise TypeError('Length must be an integer.')
+    if length < 2:
+        raise ValueError('Length must be at least 2.')
+    
+    check_poles(mpoles)
 
-    np, mp = mpoles.size()
-    if np != 1 or length < 2:
-        raise ValueError('Wrong parameters!')
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
-
-    bts = torch.zeros((mp, length), dtype=torch.cfloat)
+    bts = torch.zeros((mpoles.numel(), length), dtype=torch.complex64)
     t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
     z = torch.exp(1j * t)
 
@@ -77,7 +78,7 @@ def __pszi(l:int, j:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor)
         The calculated values of the biorthogonal polynomial.
     """
     n = len(poles)
-    v = torch.zeros(z.size(), dtype=torch.cfloat)
+    v = torch.zeros(z.size(), dtype=torch.complex64)
     do = __domega(int(multi[l]) - j, l, poles, multi, poles[l])
 
     for s in range(multi[l] - j + 1):
@@ -108,7 +109,7 @@ def __omega(l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> to
         The calculated values of the Omega base functions.
     """
     n = len(poles)
-    v = torch.ones(z.size(), dtype=torch.cfloat)
+    v = torch.ones(z.size(), dtype=torch.complex64)
     v /= (1 - poles[l].conj() * z) ** multi[l]
 
     # Blaschke-function
@@ -149,7 +150,7 @@ def __domega(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tenso
         The calculated values of the sth derivative of the omega function.
     """
     n = len(poles)
-    Do = torch.zeros((s + 1, len(z)), dtype=torch.cfloat)
+    Do = torch.zeros((s + 1, z.numel()), dtype=torch.complex64)
     Do[0, :] = __omega(l, poles, multi, poles[l]) / __omega(l, poles, multi, z)
 
     for i in range(1, s + 1):
