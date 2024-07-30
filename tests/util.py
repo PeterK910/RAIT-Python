@@ -337,7 +337,7 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     """
     Computes the weight function of discrete dot product in H^2(D).
-    TODO: find out if mpoles is a tensor of complex or real numbers
+    TODO: find out if mpoles is a tensor of complex or real numbers. Right now it assumes complex numbers.
     TODO: find out y,z are complex or real tensors
     Parameters
     ----------
