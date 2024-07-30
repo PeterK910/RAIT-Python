@@ -120,7 +120,7 @@ def bisection_order(n: int) -> torch.Tensor:
     return bo
 
 
-from blaschke import arg_inv, argdr_inv
+
 
 def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
@@ -144,6 +144,8 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from .blaschke import arg_inv
+
     # Validate input parameters
     if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
         raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
@@ -181,6 +183,8 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
+    from .blaschke import argdr_inv
+
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError("Poles must be inside the unit disc")
 

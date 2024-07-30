@@ -337,7 +337,8 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     """
     Computes the weight function of discrete dot product in H^2(D).
-
+    TODO: find out if mpoles is a tensor of complex or real numbers
+    TODO: find out y,z are complex or real tensors
     Parameters
     ----------
     y : torch.Tensor
@@ -352,17 +353,20 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     torch.Tensor
         Value of the weight function at arguments "y" and "z".
     """
-    r = torch.zeros_like(y)
+
+    check_poles(mpoles)
+
+    r = torch.zeros_like(y, dtype=torch.complex64)
     m = len(mpoles)
-    if y == z:
+    if torch.allclose(y, z):
         for k in range(m):
             alpha = torch.angle(mpoles[k])
             R = torch.abs(mpoles[k])
             t = torch.angle(z)
             r += __poisson(R, t - alpha)
     else:
-        for i in range(1, m + 1):
-            r += __MT(i - 1, mpoles, y) * torch.conj(__MT(i - 1, mpoles, z))
+        for i in range(m):
+            r += __MT(i, mpoles, y) * torch.conj(__MT(i, mpoles, z))
     return r
 
 def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
@@ -381,7 +385,7 @@ def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
     torch.Tensor
         The calculated Poisson ratio.
     """
-    return (1-r**2)/(1-2*r*math.cos(t)+r**2)
+    return (1-r**2)/(1-2*r*torch.cos(t)+r**2)
 
 def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
     """
@@ -401,10 +405,10 @@ def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
         torch.Tensor
             Values of the Malmquist-Takenaka function.
     """
-    r = torch.ones_like(z)
+    r = torch.ones_like(z, dtype=torch.complex64)
     for k in range(n):
         r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
-    r *= math.sqrt(1 - torch.abs(mpoles[n]) ** 2 / (1 - torch.conj(mpoles[n]) * z))
+    r *= torch.sqrt(1 - torch.abs(mpoles[n]) ** 2) / (1 - torch.conj(mpoles[n]) * z)
     return r
 
 def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

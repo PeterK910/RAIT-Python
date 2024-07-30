@@ -71,3 +71,19 @@ def test_multiplicity():
     expected_mult = torch.tensor([3, 1, 1], dtype=torch.int32)
     assert torch.allclose(spoles, expected_spoles)
     assert torch.equal(mult, expected_mult)
+
+def test_kernel():
+    from .util import kernel
+    #TODO: type specification of y and z
+    #when y and z are equal
+    y=torch.tensor([0,1], dtype=torch.complex64)
+    z=torch.tensor([0,1], dtype=torch.complex64)
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor([4.6000+0.j, 4.6000+0.j],dtype=torch.complex64)
+    assert torch.allclose(kernel(y, z, mpoles), expected_result)
+
+    #when y and z are different
+    y=torch.tensor([0,1], dtype=torch.complex64)
+    z=torch.tensor([0,-1], dtype=torch.complex64) #-1 instead of 1
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor([1.0000+0.0000j, 0.3600+0.4800j],dtype=torch.complex64)
