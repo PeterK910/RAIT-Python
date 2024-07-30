@@ -18,12 +18,12 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     ----------
     length : int
         Number of points in case of uniform sampling. Must be at least 2.
-    mpoles : torch.Tensor
-        Poles of the biorthogonal system.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. Must a 1-dimensional tensor with all its elements inside the unit circle.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the biorthogonal system at the uniform sampling points as row vectors.
     
     Raises
@@ -346,9 +346,10 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     ----------
     length : int
         Number of points in case of uniform sampling.
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the biorthogonal system (1-dimensional tensor).
-    coeffs : torch.Tensor
+    coeffs : torch.Tensor, dtype=torch.complex64
+    TODO: coeffs dtype?
         Coefficients of the linear combination to form (1-dimensional tensor).
 
     Returns
@@ -373,8 +374,11 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     """
 
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
-        raise ValueError('Length must be an integer greater than or equal to 2.')
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be at least 2.')
+
     
     if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
         raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
