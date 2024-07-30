@@ -182,15 +182,17 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     from blaschke import arg_inv
 
     # Validate input parameters
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
 
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    if not isinstance(eps, float):
+        raise TypeError('Eps must be a float.')
+    
+    if eps <= 0:
+        raise ValueError('Eps must be a positive number.')
 
     # Calculate the non-equidistant complex discretization
     m = len(mpoles)
-    z = torch.linspace(-torch.pi, torch.pi, m + 1)
+    z = torch.linspace(-torch.pi, torch.pi, m + 1, dtype=torch.float64)
     t = arg_inv(mpoles, z, eps)
 
     return t

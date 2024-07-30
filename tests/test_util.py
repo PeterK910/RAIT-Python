@@ -87,3 +87,7 @@ def test_kernel():
     z=torch.tensor([0,-1], dtype=torch.complex64) #-1 instead of 1
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor([1.0000+0.0000j, 0.3600+0.4800j],dtype=torch.complex64)
+
+def test_discretize_dc():
+    from .util import discretize_dc
+    #waiting for blaschke/arg_inv to be tested
