@@ -1,8 +1,8 @@
 import torch
 from math import factorial
 from scipy.special import binom
-from util import multiplicity, discretize_dc, subsample, dotdc
-from rat_sys import mlf_system, mlfdc_system
+
+from util import multiplicity
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -190,6 +190,7 @@ def __ro(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -
     v *= (-1) ** s * factorial(s)
     return v
 
+from util import discretize_dc
 
 def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -229,7 +230,7 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     return bts
 
-
+from rat_sys import mlf_system
 
 def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float]:
     """
@@ -388,6 +389,9 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     v = coeffs @ bts
 
     return v
+
+from util import subsample, dotdc
+from rat_sys import mlfdc_system
 
 def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """

@@ -4,11 +4,6 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
-from blaschke import arg_inv, argdr_inv
-from mt_sys import mt_system
-from biort_sys import biort_system
-from rat_sys import lf_system, mlf_system
-
 def addimag(v: torch.Tensor) -> torch.Tensor:
     """
     Calculates the imaginary part of v using FFT to be in Hardy space.
@@ -33,8 +28,8 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-    if not torch.all(v.imag == 0):
-        raise ValueError('The vector is not real!')
+    if not v.dtype.is_floating_point:
+        raise ValueError('v must have real elements.')
 
     # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
@@ -149,6 +144,8 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from .blaschke import arg_inv
+
     # Validate input parameters
     if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
         raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
@@ -186,6 +183,8 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
+    from .blaschke import argdr_inv
+
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError("Poles must be inside the unit disc")
 
@@ -242,9 +241,6 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
     s = torch.sum(F[:-1] * torch.conj(G[:-1]) / kernel_vals)
 
     return s
-
-
-import torch
 
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
@@ -450,6 +446,10 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 
     # Squeeze to remove extra dimensions
     return y.squeeze()
+
+from mt_sys import mt_system
+from biort_sys import biort_system
+from rat_sys import lf_system, mlf_system
 
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
@@ -768,9 +768,6 @@ def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.
         k[i - 1] = ddy[i - 1] / ((1 + dy[i - 1]**2)**(3/2))
 
     return k, dy, ddy
-
-import torch
-import matplotlib.pyplot as plt
 
 def rshow(*args):
     """
