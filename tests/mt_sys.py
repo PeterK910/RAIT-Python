@@ -7,9 +7,9 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     len : int
-        Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the rational system.
+        Number of points in case of uniform sampling. Must be an integer greater than or equal to 2.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1-dimensional tensor.
 
     Returns
     -------
@@ -21,19 +21,20 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from .util import check_poles
+
     # Validate input parameters
-    if not isinstance(len, int) or len < 2:
-        raise ValueError('len must be a positive integer greater than or equal to 2.')
+    if not isinstance(len, int):
+        raise TypeError('len must be an integer.')
+    
+    if len < 2:
+        raise ValueError('len must be an integer greater than or equal to 2.')
 
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    check_poles(poles)
 
     # Calculate the MT system elements
     np, mp = poles.size(0), len
-    mts = torch.zeros(mp, len)
+    mts = torch.zeros(mp, len, dtype=torch.complex64)
     t = torch.linspace(-torch.pi, torch.pi, len + 1)[:-1]
     z = torch.exp(1j * t)
 

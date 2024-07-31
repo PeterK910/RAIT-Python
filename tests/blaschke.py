@@ -110,8 +110,9 @@ def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
     ----------
     len : int
         Number of points for uniform sampling.
-    poles : torch.Tensor
-        Parameters of the Blaschke product.
+    TODO: is len=1 allowed?
+    poles : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
 
     Returns
     -------
