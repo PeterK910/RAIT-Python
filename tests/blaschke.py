@@ -124,15 +124,13 @@ def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from .util import check_poles
     # Validate input parameters
-    if not isinstance(len, int) or len <= 0:
-        raise ValueError('len must be a positive integer.')
-
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    if not isinstance(len, int):
+        raise TypeError('"len" must be an integer.')
+    if len <= 0:
+        raise ValueError('"len" must be a positive integer.')
+    check_poles(poles)
 
     # Calculate the sampled Blaschke function
     t = torch.linspace(-torch.pi, torch.pi, len + 1)

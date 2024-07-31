@@ -22,3 +22,6 @@ def test_biort_system():
 
     with pytest.raises(ValueError, match="Length must be at least 2."):
         biort_system(-1, mpoles)
+
+def test_biortdc_generate():
+    from .biort_sys import biortdc_generate

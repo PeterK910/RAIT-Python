@@ -277,3 +277,21 @@ def test_arg_der():
 def test_arg_inv():
     from .blaschke import arg_inv
     #todo: will likely have the same problem as argdr_inv. When latter is solved, copy paste code AND test to here
+
+def test_blaschkes():
+    from .blaschke import blaschkes
+    len=3
+    poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
+    expected_result = torch.tensor(
+        [-0.6000+0.8000j, -0.976627+0.214941j, -0.177219-0.984171j, -0.6000+0.8000j], dtype=torch.complex64)
+    assert torch.allclose(blaschkes(len, poles), expected_result)
+
+    #input validation
+    regex = re.compile(re.escape('"len" must be an integer.'))
+    with pytest.raises(TypeError, match=regex):
+        poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
+        blaschkes(2.3, poles)
+    regex = re.compile(re.escape('"len" must be a positive integer.'))
+    with pytest.raises(ValueError, match=regex):
+        poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
+        blaschkes(0, poles)
