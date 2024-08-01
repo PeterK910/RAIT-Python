@@ -506,6 +506,13 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     ------
     ValueError
         If input parameters are invalid.
+
+    Known Issues
+    ------------
+    If "a" has only one pole, and b has a value of exactly -pi, the output might be different than in the matlab version.
+    Discovered for a=[-0.5j]
+
+    
     """
     from util import check_poles
     # Validate input parameters
@@ -526,23 +533,29 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     
     
     if len(a) == 1:
-        t = __argdr_inv_one(a, b)
+        t = __argdr_inv_one(a, b, epsi)
     else:
         t = __argdr_inv_all(a, b, epsi)
     return t
 
-def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor)->torch.Tensor:
+def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     """
     Inverse when the number of poles is 1
     """
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
-
+    
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
+    print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
 
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
-    t = (t + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    print(f"t before moving to [-pi,pi) = {t}")
+    #handle edge case of -pi not being exactly -pi, by adding a very small number before modulo
+    t = (t + torch.pi + epsi/1000) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    
+    print(f"t after moving to [-pi,pi) = {t}")
+    t.to()
     return t
 
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
@@ -581,9 +594,9 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
             v2 = torch.tensor([v2], dtype=torch.float64)
-            print("first call of argdr_fun")
+            #print("first call of argdr_fun")
             fv1 = (argdr_fun(a, v1)-v1/2)/a.size(0)
-            print("second call of argdr_fun")
+            #print("second call of argdr_fun")
             fv2 = (argdr_fun(a, v2)-v2/2)/a.size(0)
 
             #unwrapping the result
@@ -603,8 +616,8 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
             #print(f"xa.ndim = {xa.ndim}, xa.dtype = {xa.dtype}")
-            print(f"before first call of argdr_fun, a = {a}, xa = {xa[0], v1 = {v1[0]}, v2 = {v2[0]}")
-            print("first call of argdr_fun")
+            #print(f"before first call of argdr_fun, a = {a}, xa = {xa[0], v1 = {v1[0]}, v2 = {v2[0]}")
+            #print("first call of argdr_fun")
             fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
 
             #unwrapping the result
@@ -613,7 +626,7 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             #print(f"fvk.dtype = {fvk.dtype}, fvk = {fvk}")
             #print("ok1")
             while torch.abs(fvk - ba) > epsi:
-                print(f"fvk = {fvk}, ba = {ba}")
+                #print(f"fvk = {fvk}, ba = {ba}")
                 if fvk == ba:
                     x[s[i, 0]] = xa
                     break
@@ -622,6 +635,7 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 else:
                     v2 = xa
                 #delete when test is done
+                """
                 if type(v1) == torch.Tensor and type(v2) == torch.Tensor:
                     print(f"v1 = {v1[0]}, v2 = {v2[0]}")
                 elif type(v1) == torch.Tensor and type(v2) == float:
@@ -630,12 +644,12 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                     print(f"v1 = {v1}, v2 = {v2[0]}")
                 else:
                     print(f"v1 = {v1}, v2 = {v2}")
-
+                """
                 xa = (v1 + v2) / 2
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
-                print("manieth call of argdr_fun")
-                print(f"a = {a}, xa = {xa[0]}")
+                #print("manieth call of argdr_fun")
+                #print(f"a = {a}, xa = {xa[0]}")
                 fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
                 #unwrapping the result
                 fvk = fvk[0]
