@@ -229,7 +229,7 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     a : torch.Tensor, dtype=torch.complex64
         Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
     t : torch.Tensor, dtype=torch.float64
-        Values in [-pi, pi), where the function values are needed. Must be a 1-dimensional torch.Tensor.
+        REAL (not complex!) values where the function values are needed. Must be a 1-dimensional torch.Tensor.
 
     Returns
     -------
@@ -241,18 +241,9 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
+    from .util import check_poles
     # Validate input parameters
-    if not isinstance(a, torch.Tensor):
-        raise TypeError('"a" must be a torch.Tensor.')
-    
-    if a.dtype != torch.complex64:
-        raise TypeError('"a" must be a complex torch.Tensor.')
-    
-    if a.ndim != 1:
-        raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Elements of "a" must be inside the unit circle!')
+    check_poles(a)
     
 
     if not isinstance(t, torch.Tensor):
@@ -263,9 +254,6 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
-    
-    if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
-        raise ValueError('Elements of "t" must be in [-pi, pi).')
 
     # Calculate the argument function values
     b = torch.zeros(len(t), dtype=torch.float64)

@@ -341,13 +341,15 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     Computes the weight function of discrete dot product in H^2(D).
     TODO: find out if mpoles is a tensor of complex or real numbers. Right now it assumes complex numbers.
     TODO: find out y,z are complex or real tensors
+    TODO:y and z are SINGLE complex numbers (tensors wiht 1 element), abs <=(!) 1
+
     Parameters
     ----------
     y : torch.Tensor
         First argument.
     z : torch.Tensor
         Second argument.
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the rational system.
 
     Returns
