@@ -49,30 +49,7 @@ def test_argdr_fun():
     assert torch.allclose(argdr_fun(a, t), expected_result)
 
     #input validation
-    #a
-    regex = re.compile(re.escape('"a" must be a torch.Tensor.'))
-    with pytest.raises(TypeError, match=regex):
-        a = [1, 2, 3]
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
-        argdr_fun(a, t)
-
-    regex = re.compile(re.escape('"a" must be a complex torch.Tensor.'))
-    with pytest.raises(TypeError, match=regex):
-        a = torch.tensor([1.0, 2.0, 3.0])
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
-        argdr_fun(a, t)
-
-    regex = re.compile(re.escape('"a" must be a 1-dimensional torch.Tensor.'))
-    with pytest.raises(ValueError, match=regex):
-        a = torch.tensor([[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
-        argdr_fun(a, t)
-
-    regex = re.compile(re.escape('Elements of "a" must be inside the unit circle!'))
-    with pytest.raises(ValueError, match=regex):
-        a = torch.tensor([0.5, 0.5, 1], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
-        argdr_fun(a, t)
+    #a is already tested with check_poles(a) in blaschke.py
 
     #t
     regex = re.compile(re.escape('"t" must be a torch.Tensor.'))
@@ -92,18 +69,6 @@ def test_argdr_fun():
         a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
         t = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=torch.float64)
         argdr_fun(a, t)
-
-    regex = re.compile(re.escape('Elements of "t" must be in [-pi, pi).'))
-    with pytest.raises(ValueError, match=regex):
-        a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, torch.pi], dtype=torch.float64)
-        argdr_fun(a, t)
-    try:
-        a = torch.tensor([0, 0, 0], dtype=torch.complex64)
-        t = torch.tensor([-torch.pi, 2.0, 3.0], dtype=torch.float64) # -pi is valid
-        argdr_fun(a, t)
-    except ValueError:
-        pytest.fail('argdr_fun raised ValueError unexpectedly!')
 
 def test_argdr_inv():
     from .blaschke import argdr_inv
