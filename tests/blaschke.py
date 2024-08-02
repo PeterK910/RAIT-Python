@@ -329,16 +329,15 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     
     return b
 
-
 def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tensor:
     """
     Inverse images by the argument function of a Blaschke product.
 
     Parameters
     ----------
-    a : torch.Tensor
-        Parameters of the Blaschke product.
-    b : torch.Tensor
+    a : torch.Tensor, dtype=torch.complex64
+        Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
+    b : torch.Tensor, dtype=torch.float64
         Values in [-pi, pi) whose inverse image is needed.
     epsi : float, optional
         Required precision for the inverses (default is 1e-4).
@@ -348,31 +347,32 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
     torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
+    from util import check_poles
     # Validate input parameters
-    if not isinstance(a, torch.Tensor) or a.ndim != 1:
-        raise ValueError('a must be a 1-dimensional torch.Tensor.')
+    check_poles(a)
     
-    if not isinstance(b, torch.Tensor) or b.ndim != 1:
-        raise ValueError('b must be a 1-dimensional torch.Tensor.')
+    if not isinstance(b, torch.Tensor):
+        raise TypeError('"b" must be a torch.Tensor.')
+    if b.dtype != torch.float64:
+        raise TypeError('"b" must be a torch.Tensor with float64 dtype.')
+    if b.ndim != 1:
+        raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
+    if b.min() < -torch.pi or b.max() >= torch.pi:
+        raise ValueError('Elements of "b" must be in [-pi, pi).')
     
-    if torch.max(torch.abs(a)) >= 1:
-        raise ValueError('Elements of a must be inside the unit circle!')
-    
+    if not isinstance(epsi, float):
+        raise TypeError('"epsi" must be a float.')
     if epsi <= 0:
-        raise ValueError('epsi must be a positive number!')
-    
-    # Initialize the result tensor
-    t = torch.zeros_like(b)
+        raise ValueError('"epsi" must be a positive float.')
     
     # Calculate inverse images
     if len(a) == 1:
-        t = __arg_inv_one(a, b)
+        t = __arg_inv_one(a, b, epsi)
     else:
         t = __arg_inv_all(a, b, epsi)
-    
     return t
 
-def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+def __arg_inv_one(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """
     Calculate the inverse images by the argument function of a Blaschke product.
 
@@ -382,6 +382,8 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
         Parameters of the Blaschke product.
     b : torch.Tensor
         Values in [-pi, pi) whose inverse image is needed.
+    epsi : float
+        Used to handle edge case of -pi not being exactly -pi.
 
     Returns
     -------
@@ -403,11 +405,10 @@ def __arg_inv_one(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     # Calculate inverse images
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
-    t = torch.fmod(t + torch.pi, 2 * torch.pi) - torch.pi  # Move it in [-pi, pi)
+    #handle edge case of -pi not being exactly -pi, by adding a very small number
+    t = (t + torch.pi + epsi/1000) % (2 * torch.pi) - torch.pi  # Move it in [-pi, pi)
     
     return t
-
-
 
 def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor:
     """
@@ -441,24 +442,28 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     
     # Initialize variables
     n = len(b)
-    s = bisection_order(n) + 1
-    x = torch.zeros(n)
-    
-    for i in range(n):
+    s = bisection_order(n)
+    x = torch.zeros(n+1, dtype=torch.float64)
+    for i in range(n+1):
         if i == 0:
             v1, v2 = -torch.pi, torch.pi
-            fv1, fv2 = -torch.pi, torch.pi
+            fv1, fv2 = -torch.pi, torch.pi # fv1 <= y, fv2 >= y
 
-            v1 = torch.tensor(v1)
-            v2 = torch.tensor(v2)
-            fv1 = torch.tensor(fv1)
-            fv2 = torch.tensor(fv2)
         elif i == 1:
             x[n] = x[0] + 2 * torch.pi
             continue
         else:
-            v1, v2 = x[s[i, 1]], x[s[i, 2]]
+            v1 = x[s[i, 1]]
+            v2 = x[s[i, 2]]
+
+            #convert v1 and v2 to a format that argdr_fun can accept
+            v1 = torch.tensor([v1], dtype=torch.float64)
+            v2 = torch.tensor([v2], dtype=torch.float64)
+
             fv1, fv2 = arg_fun(a, v1), arg_fun(a, v2)
+
+            #unwrapping the result
+            fv1, fv2 = fv1[0], fv2[0]
         
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -469,8 +474,16 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             continue
         else:
             xa = (v1 + v2) / 2
+
+            #convert xa to a format that argdr_fun can accept
+            xa = torch.tensor([xa], dtype=torch.float64)
+
             fvk = arg_fun(a, xa)
-            while abs(fvk - ba) > epsi:
+
+            #unwrapping the result
+            fvk = fvk[0]
+
+            while torch.abs(fvk - ba) > epsi:
                 if fvk == ba:
                     x[s[i, 0]] = xa
                     return x
@@ -479,10 +492,18 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
                 else:
                     v2 = xa
                 xa = (v1 + v2) / 2
+
+                #convert xa to a format that argdr_fun can accept
+                xa = torch.tensor([xa], dtype=torch.float64)
+
                 fvk = arg_fun(a, xa)
+
+                #unwrapping the result
+                fvk = fvk[0]
+
             x[s[i, 0]] = xa
-    
-    return x
+    #drop the last element
+    return x[:n]
 
 def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tensor:
     """
@@ -510,22 +531,23 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     """
     from util import check_poles
     # Validate input parameters
-    
     check_poles(a)
 
     if not isinstance(b, torch.Tensor):
         raise TypeError('"b" must be a torch.Tensor.')
-    
     if b.dtype != torch.float64:
         raise TypeError('"b" must be a torch.Tensor with float64 dtype.')
-
     if b.ndim != 1:
         raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
-    
     if b.min() < -torch.pi or b.max() >= torch.pi:
         raise ValueError('Elements of "b" must be in [-pi, pi).')
     
+    if not isinstance(epsi, float):
+        raise TypeError('"epsi" must be a float.')
+    if epsi <= 0:
+        raise ValueError('"epsi" must be a positive float.')
     
+    # Calculate inverse images
     if len(a) == 1:
         t = __argdr_inv_one(a, b, epsi)
     else:
@@ -534,7 +556,21 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
 
 def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     """
-    Inverse when the number of poles is 1
+    Calculate the inverse images by the argument function of a Blaschke product.
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        Parameters of the Blaschke product.
+    b : torch.Tensor
+        Values in [-pi, pi) whose inverse image is needed.
+    epsi : float
+        Used to handle edge case of -pi not being exactly -pi.
+
+    Returns
+    -------
+    torch.Tensor
+        Inverse images by the argument function of the points in 'b'.
     """
     r = torch.abs(a)
     fi = torch.angle(a)
@@ -558,7 +594,6 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     s = bisection_order(n)
     x = torch.zeros(n+1, dtype=torch.float64)
     for i in range(n+1):
-        print(f"i = {i}")
         if i == 0:
             v1 = -torch.pi
             v2 = torch.pi
@@ -579,8 +614,7 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             fv2 = (argdr_fun(a, v2)-v2/2)/a.size(0)
 
             #unwrapping the result
-            fv1 = fv1[0]
-            fv2 = fv2[0]
+            fv1, fv2 = fv1[0], fv2[0]
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -619,6 +653,7 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 fvk = fvk[0]
 
             x[s[i, 0]] = xa
+    #drop the last element
     return x[:n]
 
 def arg_inv_anim(a: torch.Tensor, n: int) -> None:

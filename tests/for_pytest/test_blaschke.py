@@ -129,6 +129,19 @@ def test_argdr_inv():
         b = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=torch.float64)
         argdr_inv(a, b)
 
+    #epsi
+    regex = re.compile(re.escape('"epsi" must be a float.'))
+    with pytest.raises(TypeError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
+        argdr_inv(a, b, epsi=1)
+    
+    regex = re.compile(re.escape('"epsi" must be a positive float.'))
+    with pytest.raises(ValueError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
+        argdr_inv(a, b, epsi=-1.)
+
 def test_arg_der():
     from .blaschke import arg_der
     a = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
@@ -195,8 +208,63 @@ def test_arg_der():
 
 def test_arg_inv():
     from .blaschke import arg_inv
-    #todo: will likely have the same problem as argdr_inv. When latter is solved, copy paste code AND test to here
+    #when first parameter is 1 number
+    a = torch.tensor([-0.5j], dtype=torch.complex64)
+    b = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-1.312326, -1.273881, -1.233906], dtype=torch.float64)
+    assert torch.allclose(arg_inv(a, b), expected_result)
 
+    #edge case where b has a -pi value
+    a = torch.tensor([-0.5j], dtype=torch.complex64)
+    b = torch.tensor([-torch.pi, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-3.141593, -1.273881, -1.233906], dtype=torch.float64)
+    assert torch.allclose(arg_inv(a, b), expected_result)
+
+    #when first parameter is more than 1 number
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    b = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-0.346104, -0.276500, -0.208710], dtype=torch.float64)
+    assert torch.allclose(arg_inv(a, b), expected_result)
+
+    #edge case where b has a -pi value
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    b = torch.tensor([-torch.pi, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-3.141593, -0.276500, -0.208697], dtype=torch.float64)
+    assert torch.allclose(arg_inv(a, b), expected_result)
+    #input validation
+    #a is already tested with check_poles(a) in blaschke.py
+
+    #b
+    regex = re.compile(re.escape('"b" must be a torch.Tensor.'))
+    with pytest.raises(TypeError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = [1, 2, 3]
+        arg_inv(a, b)
+
+    regex = re.compile(re.escape('"b" must be a torch.Tensor with float64 dtype.'))
+    with pytest.raises(TypeError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        arg_inv(a, b)
+
+    regex = re.compile(re.escape('"b" must be a 1-dimensional torch.Tensor.'))
+    with pytest.raises(ValueError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=torch.float64)
+        arg_inv(a, b)
+
+    #epsi
+    regex = re.compile(re.escape('"epsi" must be a float.'))
+    with pytest.raises(TypeError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
+        arg_inv(a, b, epsi=1)
+    
+    regex = re.compile(re.escape('"epsi" must be a positive float.'))
+    with pytest.raises(ValueError, match=regex):
+        a = torch.tensor([-0.5j], dtype=torch.complex64)
+        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
+        arg_inv(a, b, epsi=-1.)
 def test_blaschkes():
     from .blaschke import blaschkes
     len=3
