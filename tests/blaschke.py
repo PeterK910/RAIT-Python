@@ -490,8 +490,11 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             print(f"before while loop, v1 = {v1}, v2 = {v2}, xa = {xa}, fvk = {fvk}, ba = {ba}")
             while torch.abs(fvk - ba) > epsi:
                 #delete later if not needed
+                #TODO: find a condition that detects the case of fvk being way too far from ba, v1, v2 - which of the three is the best to check?
+                """
                 if not (v1 < fvk and fvk < v2):
                     raise ValueError(f"fvk is not in the interval [v1, v2]! fvk = {fvk}, v1 = {v1}, v2 = {v2}")
+                """
 
 
                 print(f"fvk = {fvk}, ba = {ba}")
