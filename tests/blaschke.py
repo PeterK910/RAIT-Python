@@ -347,6 +347,8 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
     torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
+
+    print("arg_inv")
     from util import check_poles
     # Validate input parameters
     check_poles(a)
@@ -428,6 +430,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
+    print("arg_inv_all")
     from util import bisection_order
 
     # Validate input parameters
@@ -445,6 +448,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     s = bisection_order(n)
     x = torch.zeros(n+1, dtype=torch.float64)
     for i in range(n+1):
+        print(f"i = {i}")
         if i == 0:
             v1, v2 = -torch.pi, torch.pi
             fv1, fv2 = -torch.pi, torch.pi # fv1 <= y, fv2 >= y
@@ -482,8 +486,15 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
 
             #unwrapping the result
             fvk = fvk[0]
-
+            torch.set_printoptions(precision=6)
+            print(f"before while loop, v1 = {v1}, v2 = {v2}, xa = {xa}, fvk = {fvk}, ba = {ba}")
             while torch.abs(fvk - ba) > epsi:
+                #delete later if not needed
+                if not (v1 < fvk and fvk < v2):
+                    raise ValueError(f"fvk is not in the interval [v1, v2]! fvk = {fvk}, v1 = {v1}, v2 = {v2}")
+
+
+                print(f"fvk = {fvk}, ba = {ba}")
                 if fvk == ba:
                     x[s[i, 0]] = xa
                     return x
@@ -491,15 +502,19 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
                     v1 = xa
                 else:
                     v2 = xa
+                print(f"v1 = {v1}, v2 = {v2}")
                 xa = (v1 + v2) / 2
+                print(f"xa before arg_fun = {xa}")
 
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
-
+                print(f"calling arg_fun with a={a}, xa = {xa}")
                 fvk = arg_fun(a, xa)
 
                 #unwrapping the result
                 fvk = fvk[0]
+
+                print(f"fvk after arg_fun = {fvk}")
 
             x[s[i, 0]] = xa
     #drop the last element

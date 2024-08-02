@@ -192,7 +192,9 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     # Calculate the non-equidistant complex discretization
     m = len(mpoles)
-    z = torch.linspace(-torch.pi, torch.pi, m + 1, dtype=torch.float64)
+    #reduce the upper bound by small amount to have valid input for arg_inv
+    z = torch.linspace(-torch.pi, torch.pi - eps/1000, m + 1, dtype=torch.float64)
+    print(f"z={z}")
     t = arg_inv(mpoles, z, eps)
 
     return t
