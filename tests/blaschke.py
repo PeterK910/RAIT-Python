@@ -506,12 +506,6 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     ------
     ValueError
         If input parameters are invalid.
-
-    Known Issues
-    ------------
-    If "a" has only one pole, and b has a value of exactly -pi, the output might be different than in the matlab version.
-    Discovered for a=[-0.5j]
-
     
     """
     from util import check_poles
@@ -547,15 +541,10 @@ def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     mu = (1 + r) / (1 - r)
     
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-    print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
-
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
-    print(f"t before moving to [-pi,pi) = {t}")
     #handle edge case of -pi not being exactly -pi, by adding a very small number before modulo
     t = (t + torch.pi + epsi/1000) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
     
-    print(f"t after moving to [-pi,pi) = {t}")
-    t.to()
     return t
 
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
@@ -566,11 +555,8 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     from util import bisection_order
 
     n = len(b)
-    #print(n)
     s = bisection_order(n)
-    #print(s)
     x = torch.zeros(n+1, dtype=torch.float64)
-    #print(x)
     for i in range(n+1):
         print(f"i = {i}")
         if i == 0:
@@ -581,29 +567,21 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
         elif i == 1:
             x[n] = x[0] + 2 * torch.pi  # x(s(1,1))
             continue
-        else:
-            #print(f"x=\n{x}")
-            
+        else:          
             v1 = x[s[i, 1]]
-            #print(f"s[i,1] = {s[i, 1]}")
-            #print(f"v1 = {v1}")
             v2 = x[s[i, 2]]
-            #print(f"s[i,2] = {s[i, 2]}")
-            #print(f"v2 = {v2}")
             
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
             v2 = torch.tensor([v2], dtype=torch.float64)
-            #print("first call of argdr_fun")
+
             fv1 = (argdr_fun(a, v1)-v1/2)/a.size(0)
-            #print("second call of argdr_fun")
             fv2 = (argdr_fun(a, v2)-v2/2)/a.size(0)
 
             #unwrapping the result
             fv1 = fv1[0]
             fv2 = fv2[0]
-            #print(f"fv1.dtype = {fv1.dtype}, fv2.dtype = {fv2.dtype}")
-        print("first if statement done")
+
         ba = b[s[i, 0]]
         if fv1 == ba:
             x[s[i, 0]] = v1
@@ -613,20 +591,16 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             continue
         else:
             xa = (v1 + v2) / 2
+
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
-            #print(f"xa.ndim = {xa.ndim}, xa.dtype = {xa.dtype}")
-            #print(f"before first call of argdr_fun, a = {a}, xa = {xa[0], v1 = {v1[0]}, v2 = {v2[0]}")
-            #print("first call of argdr_fun")
+
             fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
 
             #unwrapping the result
             fvk = fvk[0]
 
-            #print(f"fvk.dtype = {fvk.dtype}, fvk = {fvk}")
-            #print("ok1")
             while torch.abs(fvk - ba) > epsi:
-                #print(f"fvk = {fvk}, ba = {ba}")
                 if fvk == ba:
                     x[s[i, 0]] = xa
                     break
@@ -634,26 +608,16 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                     v1 = xa
                 else:
                     v2 = xa
-                #delete when test is done
-                """
-                if type(v1) == torch.Tensor and type(v2) == torch.Tensor:
-                    print(f"v1 = {v1[0]}, v2 = {v2[0]}")
-                elif type(v1) == torch.Tensor and type(v2) == float:
-                    print(f"v1 = {v1[0]}, v2 = {v2}")
-                elif type(v1) == float and type(v2) == torch.Tensor:
-                    print(f"v1 = {v1}, v2 = {v2[0]}")
-                else:
-                    print(f"v1 = {v1}, v2 = {v2}")
-                """
                 xa = (v1 + v2) / 2
+
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
-                #print("manieth call of argdr_fun")
-                #print(f"a = {a}, xa = {xa[0]}")
+
                 fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
+
                 #unwrapping the result
                 fvk = fvk[0]
-                #print("ok2")
+
             x[s[i, 0]] = xa
     return x[:n]
 

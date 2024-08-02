@@ -493,7 +493,7 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     a : torch.Tensor, dtype=torch.complex64
         Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
     b : torch.Tensor, dtype=torch.float64
-        Real whose inverse image is needed. Must be a 1-dimensional torch.Tensor.
+        Values in [-pi,pi) whose inverse image is needed. Must be a 1-dimensional torch.Tensor.
     epsi : float, optional
         Required precision for the inverses (default is 1e-4).
 
@@ -506,8 +506,9 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     ------
     ValueError
         If input parameters are invalid.
+    
     """
-    from util import check_poles
+    from .util import check_poles
     # Validate input parameters
     
     check_poles(a)
@@ -521,25 +522,29 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
     if b.ndim != 1:
         raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
     
+    if b.min() < -torch.pi or b.max() >= torch.pi:
+        raise ValueError('Elements of "b" must be in [-pi, pi).')
+    
     
     if len(a) == 1:
-        t = __argdr_inv_one(a, b)
+        t = __argdr_inv_one(a, b, epsi)
     else:
         t = __argdr_inv_all(a, b, epsi)
     return t
 
-def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor)->torch.Tensor:
+def __argdr_inv_one(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     """
     Inverse when the number of poles is 1
     """
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
-
+    
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-
     t = 2 * torch.atan((1 / mu) * torch.tan((b - gamma) / 2)) + fi
-    t = (t + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    #handle edge case of -pi not being exactly -pi, by adding a very small number before modulo
+    t = (t + torch.pi + epsi/1000) % (2 * torch.pi) - torch.pi  # move it in [-pi,pi)
+    
     return t
 
 def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
@@ -547,14 +552,11 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
     Inverse when the number of poles is greater than 1.
     Uses the bisection method with an enhanced order of calculation
     """
-    from util import bisection_order
+    from .util import bisection_order
 
     n = len(b)
-    print(n)
     s = bisection_order(n)
-    print(s)
     x = torch.zeros(n+1, dtype=torch.float64)
-    print(x)
     for i in range(n+1):
         print(f"i = {i}")
         if i == 0:
@@ -565,15 +567,9 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
         elif i == 1:
             x[n] = x[0] + 2 * torch.pi  # x(s(1,1))
             continue
-        else:
-            print(f"x=\n{x}")
-            
+        else:          
             v1 = x[s[i, 1]]
-            print(f"s[i,1] = {s[i, 1]}")
-            print(f"v1 = {v1}")
             v2 = x[s[i, 2]]
-            print(f"s[i,2] = {s[i, 2]}")
-            print(f"v2 = {v2}")
             
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
@@ -585,7 +581,6 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             #unwrapping the result
             fv1 = fv1[0]
             fv2 = fv2[0]
-            print(f"fv1.dtype = {fv1.dtype}, fv2.dtype = {fv2.dtype}")
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -596,17 +591,15 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
             continue
         else:
             xa = (v1 + v2) / 2
+
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
-            #print(f"xa.ndim = {xa.ndim}, xa.dtype = {xa.dtype}")
 
             fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
 
             #unwrapping the result
             fvk = fvk[0]
 
-            #print(f"fvk.dtype = {fvk.dtype}, fvk = {fvk}")
-            #print("ok1")
             while torch.abs(fvk - ba) > epsi:
                 if fvk == ba:
                     x[s[i, 0]] = xa
@@ -616,12 +609,15 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
                 else:
                     v2 = xa
                 xa = (v1 + v2) / 2
+
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
+
                 fvk = (argdr_fun(a, xa)-xa/2)/a.size(0)
+
                 #unwrapping the result
                 fvk = fvk[0]
-                #print("ok2")
+
             x[s[i, 0]] = xa
     return x[:n]
 

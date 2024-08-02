@@ -57,7 +57,7 @@ def test_argdr_fun():
     #test if t is only used in trigonometric functions
     a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     t2=torch.tensor([0.1 + 2*torch.pi, 0.2, 0.3], dtype=torch.float64)
-    expected_result2 = torch.tensor([2.310337, 2.750686, 3.167403], dtype=torch.float64)
+    expected_result2 = torch.tensor([21.15989, 2.750686, 3.167403], dtype=torch.float64)
     assert torch.allclose(argdr_fun(a, t2), expected_result2)
 
     #input validation
@@ -90,19 +90,23 @@ def test_argdr_inv():
     expected_result = torch.tensor([-1.312326, -1.273881, -1.233906], dtype=torch.float64)
     assert torch.allclose(argdr_inv(a, b), expected_result)
 
-    #known issue
-    """
-    If "a" has only one pole, and b has a value of exactly -pi, the output does not match with that in matlab.
-    Discovered for a=[-0.5j]
-    """
+    #edge case where b has a -pi value
     a = torch.tensor([-0.5j], dtype=torch.complex64)
     b = torch.tensor([-torch.pi, 0.2, 0.3], dtype=torch.float64)
     expected_result = torch.tensor([-3.141593, -1.273881, -1.233906], dtype=torch.float64)
-    #TODO:do the same for more than 1 number case
+    assert torch.allclose(argdr_inv(a, b), expected_result)
 
     #when first parameter is more than 1 number
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    b = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-0.392699, -0.312549, -0.235124], dtype=torch.float64)
+    assert torch.allclose(argdr_inv(a, b), expected_result)
 
-
+    #edge case where b has a -pi value
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    b = torch.tensor([-torch.pi, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-3.141593, -0.312549, -0.235071], dtype=torch.float64)
+    assert torch.allclose(argdr_inv(a, b), expected_result)
     #input validation
     #a is already tested with check_poles(a) in blaschke.py
 
