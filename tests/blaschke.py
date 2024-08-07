@@ -220,7 +220,7 @@ def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torc
 
     return B_abs, B_arg, B
 
-def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+def arg_fun(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
     """
     Calculate the values of the argument function of a Blaschke product.
 
@@ -258,25 +258,34 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     # Calculate the argument function values
     b = torch.zeros(len(t), dtype=torch.float64)
     for i in range(len(a)):
-        b += __arg_fun_one(a[i], t)
-        #print(f"b = {b}, dtype = {b.dtype}")
+        b += __arg_fun_one(a[i], t, debug)
+        if debug:
+            print(f"b = {b}, dtype = {b.dtype}")
+    if debug:
+        print(f"b before division = {b}")
     b /= len(a)
-
+    if debug:
+        print(f"b after division = {b}")
     return b
 
-def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+def __arg_fun_one(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
     
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-    #print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
+    if debug:
+        print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
     
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    #print(f"b1 = {b}, type = {b.dtype}")
-    b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
-    #print(f"b2 = {b}, type = {b.dtype}")
+    if debug:
+        print(f"b1 = {b}, type = {b.dtype}")
+    # add very small number to handle edge case of -pi not being exactly -pi
+    epsi = min(torch.min(torch.abs(a)) / 1000, 1e-6)
+    b = (b + torch.pi + epsi) % (2 * torch.pi) - torch.pi  # move it in [-pi, pi)
+    if debug:
+        print(f"b2 = {b}, type = {b.dtype}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -449,6 +458,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     n = len(b)
     s = bisection_order(n)
     x = torch.zeros(n+1, dtype=torch.float64)
+    debug=False
     for i in range(n+1):
         
         if i == 0:
@@ -461,6 +471,10 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         else:
             v1 = x[s[i, 1]]
             v2 = x[s[i, 2]]
+            print(f"i = {i}")
+            print(f"x = {x}")
+            print(f"s = {s}")
+            print(f"v1 = x[s[{i},1]] = {v1}, v2 = x[s[{i},2]] = {v2}")
 
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
@@ -476,6 +490,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             print(f"b = {b}")
             print(f"s = {s}")
             print(f"ba for this round (b[s[{i},0]]): {b[s[i, 0]]}")
+            debug=True
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -490,8 +505,12 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
             if i > 0:
-                print(f"before while loop, calling arg_fun with a={a}, xa = {xa} = (v1 + v2) / 2 = ({v1} + {v2}) / 2")
-            fvk = arg_fun(a, xa)
+                print(f"before while loop, calling arg_fun with a={a} \n and xa = {xa} = (v1 + v2) / 2 = \n ({v1} + {v2}) / 2")
+            if(debug):
+                fvk = arg_fun(a, xa, debug)
+            else:
+                fvk = arg_fun(a, xa)
+            #fvk = arg_fun(a, xa)
             #unwrapping the result
             fvk = fvk[0]
             
@@ -537,7 +556,11 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
                 xa = torch.tensor([xa], dtype=torch.float64)
                 print(f"calling arg_fun with a={a}, xa = {xa}")
                 tmpfvk = fvk
-                fvk = arg_fun(a, xa)
+                if(debug):
+                    fvk = arg_fun(a, xa, debug)
+                else:
+                    fvk = arg_fun(a, xa)
+                #fvk = arg_fun(a, xa)
 
                 #unwrapping the result
                 fvk = fvk[0]
