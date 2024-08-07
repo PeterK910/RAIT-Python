@@ -12,6 +12,11 @@ def test_arg_fun():
     expected_result = torch.tensor([0.298025, 0.584755, 0.851365], dtype=torch.float64)
     assert torch.allclose(arg_fun(a, t), expected_result)
 
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    t = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+    expected_result=torch.tensor([0.770113, 0.916895, 1.055801], dtype=torch.float64)
+    assert torch.allclose(arg_fun(a, t), expected_result)
+
     #test if t is only used in trigonometric functions
     a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
     t2=torch.tensor([0.1 + 2*torch.pi, 0.2, 0.3], dtype=torch.float64)
@@ -22,7 +27,12 @@ def test_arg_fun():
     t = torch.tensor([0,0.5,1,1.5], dtype=torch.float64)
     expected_result = torch.tensor([0,0.5,1,1.5], dtype=torch.float64)
     assert torch.allclose(arg_fun(a, t), expected_result)
-    
+
+    #edge case where t has a -pi value
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    t = torch.tensor([-torch.pi, 0.2, 0.3], dtype=torch.float64)
+    expected_result = torch.tensor([-3.141593,  0.916895,  1.055801], dtype=torch.float64)
+    assert torch.allclose(arg_fun(a, t), expected_result)
 
     #input validation
     #a is already tested with check_poles(a) in blaschke.py

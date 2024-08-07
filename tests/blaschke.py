@@ -281,9 +281,8 @@ def __arg_fun_one(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
     if debug:
         print(f"b1 = {b}, type = {b.dtype}")
-    # add very small number to handle edge case of -pi not being exactly -pi
-    epsi = min(torch.min(torch.abs(a)) / 1000, 1e-6)
-    b = (b + torch.pi + epsi) % (2 * torch.pi) - torch.pi  # move it in [-pi, pi)
+    #don't ever use fmod again, it's not working as expected
+    b = (b + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi, pi)
     if debug:
         print(f"b2 = {b}, type = {b.dtype}")
     return b

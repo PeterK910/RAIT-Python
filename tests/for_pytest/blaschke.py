@@ -220,7 +220,7 @@ def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torc
 
     return B_abs, B_arg, B
 
-def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+def arg_fun(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
     """
     Calculate the values of the argument function of a Blaschke product.
 
@@ -258,25 +258,33 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     # Calculate the argument function values
     b = torch.zeros(len(t), dtype=torch.float64)
     for i in range(len(a)):
-        b += __arg_fun_one(a[i], t)
-        #print(f"b = {b}, dtype = {b.dtype}")
+        b += __arg_fun_one(a[i], t, debug)
+        if debug:
+            print(f"b = {b}, dtype = {b.dtype}")
+    if debug:
+        print(f"b before division = {b}")
     b /= len(a)
-
+    if debug:
+        print(f"b after division = {b}")
     return b
 
-def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+def __arg_fun_one(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
     
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-    #print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
+    if debug:
+        print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
     
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    #print(f"b1 = {b}, type = {b.dtype}")
-    b = torch.fmod(b + torch.pi, 2 * torch.pi) - torch.pi  # move it in [-pi, pi)
-    #print(f"b2 = {b}, type = {b.dtype}")
+    if debug:
+        print(f"b1 = {b}, type = {b.dtype}")
+    #don't ever use fmod again, it's not working as expected
+    b = (b + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi, pi)
+    if debug:
+        print(f"b2 = {b}, type = {b.dtype}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
