@@ -90,4 +90,10 @@ def test_kernel():
 
 def test_discretize_dc():
     from .util import discretize_dc
-    #waiting for blaschke/arg_inv to be tested
+
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor([-3.141593, -1.220906,  0.293611,  3.141591], dtype=torch.float64)
+    assert torch.allclose(discretize_dc(a), expected_result)
+
+    #input validation
+    #a is already tested with check_poles(a) in util.py, so done here

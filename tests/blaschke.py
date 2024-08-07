@@ -356,7 +356,7 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
         Inverse images by the argument function of the points in 'b'.
     """
 
-    print("arg_inv")
+    """ print("arg_inv") """
     from util import check_poles
     # Validate input parameters
     check_poles(a)
@@ -438,7 +438,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
-    print("arg_inv_all")
+    """ print("arg_inv_all") """
     torch.set_printoptions(precision=6)
 
     from util import bisection_order
@@ -470,10 +470,10 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         else:
             v1 = x[s[i, 1]]
             v2 = x[s[i, 2]]
-            print(f"i = {i}")
+            """ print(f"i = {i}")
             print(f"x = {x}")
             print(f"s = {s}")
-            print(f"v1 = x[s[{i},1]] = {v1}, v2 = x[s[{i},2]] = {v2}")
+            print(f"v1 = x[s[{i},1]] = {v1}, v2 = x[s[{i},2]] = {v2}") """
 
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
@@ -485,11 +485,11 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             fv1, fv2 = fv1[0], fv2[0]
         #i=0 ok
         if i > 0:
-            print(f"i = {i}")
+            """ print(f"i = {i}")
             print(f"b = {b}")
             print(f"s = {s}")
-            print(f"ba for this round (b[s[{i},0]]): {b[s[i, 0]]}")
-            debug=True
+            print(f"ba for this round (b[s[{i},0]]): {b[s[i, 0]]}") """
+            #debug=True
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -504,7 +504,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
             if i > 0:
-                print(f"before while loop, calling arg_fun with a={a} \n and xa = {xa} = (v1 + v2) / 2 = \n ({v1} + {v2}) / 2")
+               """  print(f"before while loop, calling arg_fun with a={a} \n and xa = {xa} = (v1 + v2) / 2 = \n ({v1} + {v2}) / 2") """
             if(debug):
                 fvk = arg_fun(a, xa, debug)
             else:
@@ -513,8 +513,8 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
             #unwrapping the result
             fvk = fvk[0]
             
-            print(f"before while loop, fvk = {fvk}, ba = {ba}")
-            print(f"while loop starts")
+            """ print(f"before while loop, fvk = {fvk}, ba = {ba}")
+            print(f"while loop starts") """
             j = 0
             error_count = 0
             while torch.abs(fvk - ba) > epsi:
@@ -525,35 +525,30 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
                     raise ValueError(f"fvk is not in the interval [v1, v2]! fvk = {fvk}, v1 = {v1}, v2 = {v2}")
                 """
                 if(torch.abs(fvk - ba) > 6):
-                    print(f"ALERT! fvk is too far from ba, fvk = {fvk}, ba = {ba}")
-                    raise ValueError(f"fvk is too far from ba, fvk = {fvk}, ba = {ba}")
-                if j == 100:
-                    print(f"ALERT! j > 100, j = {j}")
-                if j > 1000:
-                    print(f"total times new difference was greater than old difference: {error_count}")
-                    raise ValueError(f"j > 1000 and fvk still not near ba, j = {j}, fvk = {fvk}, ba = {ba}")
-                print(f"{j}-eth iteration")
+                    """ print(f"ALERT! fvk is too far from ba, fvk = {fvk}, ba = {ba}") """
+                    """ raise ValueError(f"fvk is too far from ba, fvk = {fvk}, ba = {ba}") """
+                """ print(f"{j}-eth iteration") """
                 j+=1
-                print(f"fvk = {fvk}, ba = {ba}")
+                """ print(f"fvk = {fvk}, ba = {ba}") """
                 if fvk == ba:
-                    print(f"exact match for fvk and ba, x[s[{i},0]] = {xa}")
+                    """ print(f"exact match for fvk and ba, x[s[{i},0]] = {xa}") """
                     x[s[i, 0]] = xa
                     return x
                 elif fvk < ba:
-                    print(f"fvk < ba, v1 = xa")
+                    """ print(f"fvk < ba, v1 = xa") """
                     v1 = xa
                 else:
-                    print(f"fvk > ba, v2 = xa")
+                    """ print(f"fvk > ba, v2 = xa") """
                     v2 = xa
-                print(f"v1 = {v1}, v2 = {v2}")
+                """ print(f"v1 = {v1}, v2 = {v2}")
                 if v1 > v2:
-                    raise ValueError(f"v1 > v2 violates invariant, v1 = {v1}, v2 = {v2}")
+                    raise ValueError(f"v1 > v2 violates invariant, v1 = {v1}, v2 = {v2}") """
                 xa = (v1 + v2) / 2
-                print(f"xa before arg_fun = {xa}")
+                """ print(f"xa before arg_fun = {xa}") """
 
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
-                print(f"calling arg_fun with a={a}, xa = {xa}")
+                """ print(f"calling arg_fun with a={a}, xa = {xa}") """
                 tmpfvk = fvk
                 if(debug):
                     fvk = arg_fun(a, xa, debug)
@@ -564,16 +559,16 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
                 #unwrapping the result
                 fvk = fvk[0]
 
-                print(f"fvk after arg_fun = {fvk}, before, it was {tmpfvk}")
-                old_dif = torch.abs(tmpfvk - ba)
+                """ print(f"fvk after arg_fun = {fvk}, before, it was {tmpfvk}") """
+                """ old_dif = torch.abs(tmpfvk - ba)
                 new_dif = torch.abs(fvk - ba)
                 if new_dif > old_dif:
                     error_count += 1
                     print(f"ALERT! new difference is greater than old difference, old = {old_dif}, new = {new_dif}")
                     if(error_count > 10):
-                        raise ValueError(f"new difference is greater than old difference, old = {old_dif}, new = {new_dif}")
+                        raise ValueError(f"new difference is greater than old difference, old = {old_dif}, new = {new_dif}") """
 
-            print(f"loop ends after {j} iterations, error count = {error_count}")
+            """ print(f"loop ends after {j} iterations, error count = {error_count}") """
             x[s[i, 0]] = xa
     #drop the last element
     return x[:n]
