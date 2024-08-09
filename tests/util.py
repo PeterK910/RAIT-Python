@@ -347,18 +347,32 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    y : torch.Tensor
-        First argument.
-    z : torch.Tensor
-        Second argument.
+    y : torch.Tensor, dtype=torch.complex64
+        First argument. Only one element.
+    z : torch.Tensor, dtype=torch.complex64
+        Second argument. Only one element.
     mpoles : torch.Tensor, dtype=torch.complex64
-        Poles of the rational system.
+        Poles of the rational system. Must be a 1D tensor.
 
     Returns
     -------
     torch.Tensor
         Value of the weight function at arguments "y" and "z".
     """
+    # Validate input parameters
+    if not isinstance(y, torch.Tensor):
+        raise TypeError('y must be a torch.Tensor.')
+    if y.ndim != 0:
+        raise ValueError('y must be a single number.')
+    if y.dtype != torch.complex64:
+        raise TypeError('y must be a complex number.')
+
+    if not isinstance(z, torch.Tensor):
+        raise TypeError('z must be a torch.Tensor.')
+    if z.ndim != 0:
+        raise ValueError('z must be a single number.')
+    if z.dtype != torch.complex64:
+        raise TypeError('z must be a complex number.')
 
     check_poles(mpoles)
 

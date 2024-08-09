@@ -76,17 +76,17 @@ def test_kernel():
     from .util import kernel
     #TODO: type specification of y and z
     #when y and z are equal
-    y=torch.tensor([0,1], dtype=torch.complex64)
-    z=torch.tensor([0,1], dtype=torch.complex64)
+    y=torch.tensor(-1j, dtype=torch.complex64)
+    z=torch.tensor(-1j, dtype=torch.complex64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-    expected_result = torch.tensor([4.6000+0.j, 4.6000+0.j],dtype=torch.complex64)
+    expected_result = torch.tensor(4.6000+0.j,dtype=torch.complex64)
     assert torch.allclose(kernel(y, z, mpoles), expected_result)
 
     #when y and z are different
-    y=torch.tensor([0,1], dtype=torch.complex64)
-    z=torch.tensor([0,-1], dtype=torch.complex64) #-1 instead of 1
+    y=torch.tensor(-1j, dtype=torch.complex64)
+    z=torch.tensor(0.5, dtype=torch.complex64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-    expected_result = torch.tensor([1.0000+0.0000j, 0.3600+0.4800j],dtype=torch.complex64)
+    expected_result = torch.tensor(0.8000-0.4000j,dtype=torch.complex64)
 
 def test_discretize_dc():
     from .util import discretize_dc
