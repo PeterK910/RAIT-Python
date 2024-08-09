@@ -4,6 +4,7 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
+
 def check_poles(poles: torch.Tensor):
     """
     Checks if the poles are inside the unit circle.
