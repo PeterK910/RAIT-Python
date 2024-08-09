@@ -4,7 +4,6 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
-
 def check_poles(poles: torch.Tensor):
     """
     Checks if the poles are inside the unit circle.
@@ -165,8 +164,8 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles of the Blaschke product.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the Blaschke product. Must be a 1D tensor.
     eps : float, optional
         Accuracy of the complex discretization on the unit disc (default: 1e-6).
 
@@ -207,7 +206,7 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the Blaschke product, expected to be a 1D tensor.
     eps : float, optional
         Accuracy of the real discretization on the unit disc, by default 1e-6.
@@ -228,8 +227,13 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
         raise ValueError("Poles must be inside the unit disc")
 
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+    #print(f"mpoles: {mpoles}")
     m = mpoles.size(0)
-    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=m)
+    #print(f"m: {m}")
+    stepnum = 2*(m-1) + 1
+    #array of numbers ranging from -(m-1)*pi to (m-1)*pi, with pi as distance between each number
+    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=stepnum, dtype=torch.float64)
+    #print(f"z: {z}")
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t

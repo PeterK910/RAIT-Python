@@ -97,3 +97,13 @@ def test_discretize_dc():
 
     #input validation
     #a is already tested with check_poles(a) in util.py, so done here
+
+def test_discretize_dr():
+    from .util import discretize_dr
+
+    a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor([-2.547801, -1.727318, -1.088921, -0.372949,  0.261651,  1.153941, 2.466805], dtype=torch.float64)
+    assert torch.allclose(discretize_dr(a), expected_result)
+
+    #input validation
+    #a is already tested with check_poles(a) in util.py, so done here
