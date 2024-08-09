@@ -23,15 +23,15 @@ def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from util import multiplicity
+    from util import check_poles, multiplicity
+    # Validate input parameters
+    if not isinstance(length, int):
+        raise TypeError('Length must be an integer.')
+    if length < 2:
+        raise ValueError('Length must be greater than or equal to 2.')
+    check_poles(mpoles)
 
-    np, mp = mpoles.size()
-    if np != 1 or length < 2:
-        raise ValueError('Wrong parameters!')
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit disc!')
-
-    mlf = torch.zeros(mp, length)
+    mlf = torch.zeros(mpoles.numel(), length, dtype=torch.complex64)
     t = torch.linspace(-torch.pi, torch.pi, length + 1)
     t = t[:-1]
     z = torch.exp(1j * t)
