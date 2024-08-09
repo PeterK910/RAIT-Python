@@ -7,9 +7,9 @@ def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     length : int
-        Number of points in case of uniform sampling.
-    mpoles : torch.Tensor
-        Poles of the modified basic rational system.
+        Number of points in case of uniform sampling. Must be greater than or equal to 2.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system. Must be a 1D tensor.
 
     Returns
     -------
@@ -52,9 +52,9 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     length : int
-        Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the rational system.
+        Number of points in case of uniform sampling. Must be greater than or equal to 2.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1D tensor.
 
     Returns
     -------
@@ -68,21 +68,28 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    np, mp = poles.size()
-    if np != 1 or length < 2:
-        raise ValueError('Wrong parameters!')
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit disc!')
+    from util import check_poles
+    # Validate input parameters
+    if not isinstance(length, int):
+        raise TypeError('Length must be an integer.')
+    if length < 2:
+        raise ValueError('Length must be greater than or equal to 2.')
+    check_poles(poles)
 
-    lfs = torch.zeros(mp, length, dtype=torch.cfloat) # complex dtype
+    lfs = torch.zeros(poles.numel(), length, dtype=torch.complex64) # complex dtype
     t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
     z = torch.exp(1j * t)
-
-    for j in range(mp):
+    print(f"lfs: {lfs}")
+    print(f"t: {t}")
+    print(f"z: {z}")
+    for j in range(poles.numel()):
+        print(f"j: {j}")
         rec = 1 / (1 - poles[j].conj() * z)
+        print(f"rec: {rec}")
         lfs[j, :] = rec ** __multiplicity_local(j, poles)
+        print(f"lfs[j, :]: {lfs[j, :]}")
         lfs[j, :] /= torch.sqrt(torch.dot(lfs[j, :], lfs[j, :].conj()) / length)
-
+        print(f"lfs[j, :]: {lfs[j, :]}")
     return lfs
 
 def __multiplicity_local(n:int, v:torch.Tensor) -> int:
@@ -101,10 +108,13 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
     int
         The multiplicity of the nth element.
     """
+    print(f"__multiplicity_local: checking multiplicity of {n}-th element within {v}")
     m = 0
     for k in range(n):
-        if v[k] == v[n]:
+        print(f"__multiplicity_local: comparing {v[n]} with {v[k]}")
+        if torch.allclose(v[n], v[k]):
             m += 1
+            print(f"__multiplicity_local: found match at {k}-th element")
     return m
 
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
