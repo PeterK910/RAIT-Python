@@ -439,7 +439,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
     """ print("arg_inv_all") """
-    torch.set_printoptions(precision=6)
+    #torch.set_printoptions(precision=6)
 
     from .util import bisection_order
 

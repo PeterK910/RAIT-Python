@@ -57,14 +57,14 @@ def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles of the discrete complex MT system.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete complex MT system. Must be a 1-dimensional tensor.
     eps : float, optional
         Accuracy of the discretization on the unit disc (default is 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the discrete complex MT system at the uniform sampling points as row vectors.
     
     Raises
@@ -72,15 +72,13 @@ def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
-    from util import discretize_dc
-
-    if not isinstance(mpoles, torch.Tensor):
-        raise TypeError("mpoles must be a torch.Tensor")
+    from util import check_poles ,discretize_dc
+    # Validate input parameters
+    check_poles(mpoles)
     if not isinstance(eps, float):
         raise TypeError("eps must be a float")
-
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError("Poles must be inside the unit disc")
+    if eps <= 0:
+        raise ValueError("eps must be positive")
 
     m = mpoles.numel()
     t = discretize_dc(mpoles, eps)
@@ -117,8 +115,8 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
         raise TypeError("z must be a torch.Tensor")
 
     r = torch.ones_like(z)
-    for k in range(1, n+1):
-        r *= (z - mpoles[k-1]) / (1 - mpoles[k-1].conj() * z)
+    for k in range(n):
+        r *= (z - mpoles[k]) / (1 - mpoles[k].conj() * z)
     r *= torch.sqrt(1 - torch.abs(mpoles[n])**2) / (1 - mpoles[n].conj() * z)
     return r
 

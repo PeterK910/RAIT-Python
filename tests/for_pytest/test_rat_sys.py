@@ -19,7 +19,7 @@ def test_mlf_system():
     with pytest.raises(ValueError, match="Length must be greater than or equal to 2."):
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mlf_system(1, mpoles)
-    
+
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
 
 def test_lf_system():
