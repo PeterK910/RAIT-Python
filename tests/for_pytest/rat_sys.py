@@ -121,14 +121,14 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles of the discrete modified basic rational system.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete modified basic rational system. Must be a 1D tensor.
     eps : float, optional
         Accuracy of the discretization on the unit disc (default is 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the discrete modified basic rational system at the
         uniform sampling points as row vectors.
 
@@ -137,10 +137,14 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
-    from util import multiplicity, discretize_dc
+    from .util import check_poles,multiplicity, discretize_dc
+    # Validate input parameters
+    check_poles(mpoles)
 
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError("Poles must be inside the unit disc")
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be positive.')
 
     m = mpoles.numel()
     mlf = torch.zeros(m, m+1, dtype=mpoles.dtype)
@@ -149,9 +153,11 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     spoles, multi = multiplicity(mpoles)
 
     for j in range(len(multi)):
-        for k in range(1, multi[j]+1):
+        for k in range(multi[j]):
             col = sum(multi[:j]) + k
-            mlf[col-1, :] = torch.exp(1j * t) ** (k-1) / (1 - spoles[j].conj() * torch.exp(1j * t)) ** k
+            #print(f"j: {j}, k: {k}, col: {col}")
+            #compared to matlab version, since k is 0-based here, any k used in exponentiation 1 higher than in matlab 
+            mlf[col, :] = torch.exp(1j * t) ** k / (1 - spoles[j].conj() * torch.exp(1j * t)) ** (k+1)
 
     return mlf
 

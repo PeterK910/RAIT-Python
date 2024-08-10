@@ -41,3 +41,26 @@ def test_lf_system():
         lf_system(1, poles)
     
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+
+def test_mlfdc_system():
+    from .rat_sys import mlfdc_system
+    
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor(
+        [[0.800000-4.000000e-01j, 1.707381+5.518449e-01j, 0.743600+3.109000e-01j, 0.800000-3.999996e-01j],
+        [1.000000+0.000000e+00j, 1.000000+0.000000e+00j, 1.000000+0.000000e+00j, 1.000000+0.000000e+00j],
+        [0.666667-0.000000e+00j, 0.913357-5.177496e-01j, 1.780760+4.942200e-01j, 0.666667+3.017830e-07j]])
+    assert torch.allclose(mlfdc_system(mpoles), expected_result)
+
+    #input validation
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+
+    with pytest.raises(TypeError, match="eps must be a float."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_system(mpoles, eps=1)
+    with pytest.raises(ValueError, match="eps must be positive."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_system(mpoles, eps=0.)
+    with pytest.raises(ValueError, match="eps must be positive."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_system(mpoles, eps=-1.)
