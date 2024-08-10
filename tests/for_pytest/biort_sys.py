@@ -201,14 +201,14 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the discrete biorthogonal system.
     eps : float, optional
         Accuracy of the discretization on the unit disc (default is 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the discrete biorthogonal system at the uniform
         sampling points as row vectors.
 
@@ -217,10 +217,15 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit circle.
     """
-    from util import discretize_dc, multiplicity
+    from .util import check_poles, discretize_dc, multiplicity
 
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    # Validate input parameters
+    check_poles(mpoles)
+
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be positive.')
     
     m = mpoles.numel()
     bts = torch.zeros(m, m+1, dtype=mpoles.dtype)
@@ -231,7 +236,7 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     for j in range(len(multi)):
         for k in range(1, multi[j]+1):
             col = sum(multi[:j]) + k
-            bts[col-1, :] = __pszi(j+1, k, spoles, multi, torch.exp(1j * t))
+            bts[col-1, :] = __pszi(j, k, spoles, multi, torch.exp(1j * t))
 
     return bts
 

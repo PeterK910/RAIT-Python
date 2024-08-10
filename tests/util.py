@@ -171,7 +171,7 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         Non-equidistant complex discretization.
 
     Raises

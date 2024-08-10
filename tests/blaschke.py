@@ -352,7 +352,7 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         Inverse images by the argument function of the points in 'b'.
     """
 
