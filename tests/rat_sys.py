@@ -13,7 +13,7 @@ def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the modified basic rational function system
         at the uniform sampling points as row vectors.
 
@@ -58,7 +58,7 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the linearly independent system at the uniform
         sampling points as row vectors.
 
@@ -79,17 +79,17 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
     lfs = torch.zeros(poles.numel(), length, dtype=torch.complex64) # complex dtype
     t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
     z = torch.exp(1j * t)
-    print(f"lfs: {lfs}")
+    """ print(f"lfs: {lfs}")
     print(f"t: {t}")
-    print(f"z: {z}")
+    print(f"z: {z}") """
     for j in range(poles.numel()):
-        print(f"j: {j}")
+        #print(f"j: {j}")
         rec = 1 / (1 - poles[j].conj() * z)
-        print(f"rec: {rec}")
+        #print(f"rec: {rec}")
         lfs[j, :] = rec ** __multiplicity_local(j, poles)
-        print(f"lfs[j, :]: {lfs[j, :]}")
+        #print(f"lfs[j, :]: {lfs[j, :]}")
         lfs[j, :] /= torch.sqrt(torch.dot(lfs[j, :], lfs[j, :].conj()) / length)
-        print(f"lfs[j, :]: {lfs[j, :]}")
+        #print(f"lfs[j, :]: {lfs[j, :]}")
     return lfs
 
 def __multiplicity_local(n:int, v:torch.Tensor) -> int:
@@ -108,13 +108,15 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
     int
         The multiplicity of the nth element.
     """
-    print(f"__multiplicity_local: checking multiplicity of {n}-th element within {v}")
+    #print(f"__multiplicity_local: checking multiplicity of {n}-th element within {v}")
     m = 0
-    for k in range(n):
-        print(f"__multiplicity_local: comparing {v[n]} with {v[k]}")
+    #print(f"__multiplicity_local: k will range from 0 to {n}")
+    for k in range(n+1):
+        #print(f"__multiplicity_local: comparing {v[n]} with {v[k]}")
         if torch.allclose(v[n], v[k]):
             m += 1
-            print(f"__multiplicity_local: found match at {k}-th element")
+            #print(f"__multiplicity_local: found match at {k}-th element")
+    #print(f"__multiplicity_local: returning multiplicity of v[{n}] ({v[n]}) : {m}")
     return m
 
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
