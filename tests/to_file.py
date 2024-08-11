@@ -43,7 +43,7 @@ def output_to_file(arg:torch.Tensor):
     
 def write_to_file(output):
     # Open a file in write mode
-    with open("output.txt", "w") as file:
+    with open("output_python.txt", "w") as file:
         # Write the output to the file
         file.write(output)
 

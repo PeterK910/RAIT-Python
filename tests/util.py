@@ -241,7 +241,8 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
-
+    TODO: F,G - should they have at least 2 elements? Are they 1D tensors? Should they be within the unit disk?
+    some help: source book page 16, 22 - find <F,G> notation
     Parameters
     ----------
     F : torch.Tensor
@@ -345,9 +346,6 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     """
     Computes the weight function of discrete dot product in H^2(D).
-    TODO: find out if mpoles is a tensor of complex or real numbers. Right now it assumes complex numbers.
-    TODO: find out y,z are complex or real tensors
-    TODO:y and z are SINGLE complex numbers (tensors wiht 1 element), abs <=(!) 1
 
     Parameters
     ----------
