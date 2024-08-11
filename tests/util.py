@@ -544,7 +544,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
     Convert the coefficients between the continuous systems base1 and base2.
-
+    TODO: specification of coeffs? dimension, dtype, etc.
     Parameters
     ----------
     length : int
