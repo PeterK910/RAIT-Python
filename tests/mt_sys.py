@@ -116,8 +116,13 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
 
     r = torch.ones_like(z)
     for k in range(n):
-        r *= (z - mpoles[k]) / (1 - mpoles[k].conj() * z)
-    r *= torch.sqrt(1 - torch.abs(mpoles[n])**2) / (1 - mpoles[n].conj() * z)
+        r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
+    print(f"MT: r1= {r}")
+    r *= torch.sqrt(1 - torch.abs(mpoles[n])**2) / (1 - torch.conj(mpoles[n]) * z)
+    print(f"MT: n= {n}")
+    print(f"MT: mpoles= {mpoles}")
+    print(f"MT: z= {z}")
+    print(f"MT: r2= {r}")
     return r
 
 def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.Tensor) -> torch.Tensor:
@@ -227,7 +232,10 @@ def mtdr_system(poles: torch.Tensor, eps:float=1e-6) -> tuple[torch.Tensor, torc
     t = discretize_dr(poles, eps)
     mts_re = torch.zeros(m, t.size(0), dtype=torch.complex64)
     mts_im = torch.zeros(m, t.size(0), dtype=torch.complex64)
-
+    print(f"mpoles: {mpoles}")
+    print(f"t: {t}")
+    print(f"mts_re: {mts_re}")
+    print(f"mts_im: {mts_im}")
     for j in range(m):
         mt_values = __mt(j - 1, mpoles, torch.exp(1j * t))
         mts_re[j, :] = mt_values.real
