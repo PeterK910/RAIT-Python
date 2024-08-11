@@ -289,7 +289,7 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes discrete real dot product of two functions in H^2(ID).
-
+    TODO: fix this like in dotdc
     Parameters
     ----------
     F : torch.Tensor

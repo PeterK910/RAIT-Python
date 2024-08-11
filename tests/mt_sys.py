@@ -191,14 +191,14 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
 
 
-def mtdr_system(poles, eps=1e-6):
+def mtdr_system(poles: torch.Tensor, eps:float=1e-6) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Generates the discrete real MT system.
 
     Parameters
     ----------
-    poles : torch.Tensor
-        Poles of the discrete real MT system.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete real MT system. Must be a 1-dimensional tensor.
     eps : float, optional
         Accuracy of the real discretization on the unit disc (default is 1e-6).
 
@@ -214,10 +214,13 @@ def mtdr_system(poles, eps=1e-6):
     ValueError
         If any of the poles have a magnitude greater than or equal to 1.
     """
-    from util import discretize_dr
-
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Bad poles! Poles must have magnitudes less than 1.')
+    from util import check_poles ,discretize_dr
+    # Validate input parameters
+    check_poles(poles)
+    if not isinstance(eps, float):
+        raise TypeError("eps must be a float")
+    if eps <= 0:
+        raise ValueError("eps must be positive")
 
     mpoles = torch.cat((torch.zeros(1), poles))
     m = mpoles.size(0)
