@@ -486,8 +486,9 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 
 def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     """
-    TODO: check if interpolation without numpy is correct here
     Interpolate values between uniform sampling points using linear interpolation.
+    TODO: sample: which of these are acceptable: [-pi,0], [-1,0,1,2], [-pi,pi]?
+    TODO: x: what are the acceptable values for x? Only sure that it is a float. Single number/1D tensor?
 
     Parameters
     ----------
@@ -502,17 +503,22 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
         The interpolated values at the points specified by x.
     """
 
-    # Validate input types
+    # Validate input parameters
     if not isinstance(sample, torch.Tensor):
-        raise TypeError("sample must be a torch.Tensor")
+        raise TypeError('sample must be a torch.Tensor.')
+    if sample.ndim != 1:
+        raise ValueError('sample must be a 1-dimensional torch.Tensor.')
+    if sample.dtype != torch.float64:
+        raise TypeError('sample must have float64 elements.')
+    if torch.min(sample) < -torch.pi or torch.max(sample) >= torch.pi:
+        raise ValueError('sample values must be in [-pi, pi).')
+    diffs = torch.diff(sample)  
+    if not torch.allclose(diffs, diffs[0]):
+        raise ValueError('sample must be uniformly sampled.')
+    
     if not isinstance(x, torch.Tensor):
-        raise TypeError("x must be a torch.Tensor")
-
-    # Validate input dimensions
-    if sample.dim() != 1:
-        raise ValueError("sample must be a 1D tensor")
-    if x.dim() != 1:
-        raise ValueError("x must be a 1D tensor")
+        raise TypeError('x must be a torch.Tensor.')
+    #TODO: after specification of sample, x, add more checks for x
 
     # Number of samples
     len = sample.size(0)
