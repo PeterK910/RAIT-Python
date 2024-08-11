@@ -123,18 +123,20 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
 def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.Tensor) -> torch.Tensor:
     """
     Generates a function in the space spanned by the discrete real MT system.
-
+    TODO: cUk and cVk: can they be complex? any constraints on them? (e.g. within unit circle?)
+    TODO: Also, looking at the matlab code, their lenght seems to be 1 more than mpoles. Is this correct?
+    So far, cUk = [0,1,2,3], cVk = [0,-i,-2i,-3i] ran without errors in matlab
     Parameters
     ----------
     length : int
         Number of points in case of uniform sampling.
-    mpoles : torch.Tensor
-        Poles of the discrete real MT system (row vector).
-    cUk : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete real MT system (row vector). Must be a 1-dimensional tensor.
+    cUk : torch.Tensor, dtype=??
         Coefficients of the linear combination to form (row vector)
         with respect to the real part of the discrete real MT system
         defined by 'mpoles'.
-    cVk : torch.Tensor
+    cVk : torch.Tensor, dtype=??
         Coefficients of the linear combination to form (row vector)
         with respect to the imaginary part of the discrete real MT 
         system defined by 'mpoles'.
