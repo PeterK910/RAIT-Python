@@ -6,12 +6,12 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    k : torch.Tensor
-        Row vector of coordinate pairs in R^2.
+    k : torch.Tensor, dtype=float64
+        Row vector of coordinate pairs in R^2. Must have an even number of elements.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=complex64
         Row vector of corresponding parameters in C.
 
     Raises
@@ -21,6 +21,8 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
     """
     if not isinstance(k, torch.Tensor):
         raise TypeError("Input k must be a torch.Tensor")
+    if k.dtype != torch.float64:
+        raise TypeError("Input k must be a tensor of dtype float64")
     if k.dim() != 1 or k.size(0) % 2 != 0:
         raise ValueError("Input k must be a 1D row vector with an even number of elements")
 
