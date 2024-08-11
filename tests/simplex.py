@@ -7,12 +7,12 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     k : torch.Tensor, dtype=float64
-        Row vector of coordinate pairs in R^2. Must have an even number of elements.
+        1D tensor of coordinate pairs in R^2. Must have an even number of elements.
 
     Returns
     -------
     torch.Tensor, dtype=complex64
-        Row vector of corresponding parameters in C.
+        1D tensor of corresponding parameters in C.
 
     Raises
     ------
@@ -43,18 +43,18 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
 def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     """
     Maps coordinates in R^2 to parameters in ID.
-
+    TODO: should every row contain the same number of elements?
     Parameters
     ----------
-    k : torch.Tensor
+    k : torch.Tensor, dtype=float64
         Matrix of coordinate pairs in R^2, rows are considered as
         vertices of the simplex.
         Must be a 2D tensor with an even number of columns.
 
     Returns
     -------
-    torch.Tensor
-        Row vector of corresponding parameters in ID.
+    torch.Tensor, dtype=complex64
+        2D tensor of corresponding parameters in ID.
 
     Raises
     ------
@@ -64,15 +64,16 @@ def coords2params_all(k: torch.Tensor) -> torch.Tensor:
 
     # Validate input parameters
     if not isinstance(k, torch.Tensor):
-        raise ValueError('k must be a torch.Tensor.')
-    
+        raise TypeError('k must be a torch.Tensor.')
+    if k.dtype != torch.float64:
+        raise TypeError('k must be a tensor of dtype float64.')
     if k.ndim != 2 or k.size(1) % 2 != 0:
         raise ValueError('k must be a 2D tensor with an even number of columns.')
 
     # Initialize output tensor
     vertnum = k.size(0)
     parnum = k.size(1) // 2
-    p = torch.zeros(vertnum, parnum)
+    p = torch.zeros(vertnum, parnum, dtype=torch.complex64)
 
     # Map coordinates to parameters
     for i in range(vertnum):
