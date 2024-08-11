@@ -42,3 +42,32 @@ def test_mtdc_system():
     with pytest.raises(ValueError, match="eps must be positive"):
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mtdc_system(mpoles, eps=0.)
+
+def test_mtdr_system():
+    from .mt_sys import mtdr_system
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_re = torch.tensor(
+        [[1.000000,1.000000,1.000000,1.000000,1.000000,1.000000,1.000000],
+        [-1.039524,-0.514822,1.103002,0.910635,0.554493,0.162007,-0.360706],
+        [0.989743,-0.814665,0.180513,0.958454,0.236961,-0.848516,-0.349550],
+        [-0.514604,0.682016,-0.966893,1.405432,-0.429582,-0.413126,0.440526]], dtype=torch.float64)
+    expected_im = torch.tensor(
+        [[0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000],
+        [-0.074635,-1.610932,-0.918993,0.132633,0.435503,0.565929,0.519566],
+        [0.142858,0.579932,-0.983573,0.285247,0.971519,0.529170,-0.936918],
+        [-0.309780,0.261393,-0.136528,-0.614615,1.567154,-0.846630,0.418619],], dtype=torch.float64)
+    re, im = mtdr_system(poles)
+    assert torch.allclose(re, expected_re)
+    assert torch.allclose(im, expected_im)
+
+    #input validation
+    #poles is already tested with check_poles(poles) in mt_sys.py
+    with pytest.raises(TypeError, match="eps must be a float"):
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_system(poles, eps=1)
+    with pytest.raises(ValueError, match="eps must be positive"):
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_system(poles, eps=-1.)
+    with pytest.raises(ValueError, match="eps must be positive"):
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_system(poles, eps=0.)
