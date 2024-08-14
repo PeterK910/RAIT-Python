@@ -103,16 +103,33 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
-
+    from .util import check_poles
     # Validate input parameters
-    if not isinstance(p, torch.Tensor) or p.ndim != 1:
-        raise ValueError('p must be a 1-dimensional torch.Tensor.')
-    
-    if not isinstance(m, torch.Tensor) or m.ndim != 1 or m.dtype != torch.int32:
-        raise ValueError('m must be a 1-dimensional torch.Tensor with integer elements.')
-    
+    check_poles(p)
+    if not isinstance(m, torch.Tensor):
+        raise TypeError('m must be a torch.Tensor.')
+    if m.dtype != torch.int64:
+        raise TypeError('m must be a tensor of dtype int64.')
+    if m.ndim != 1:
+        raise ValueError('m must be a 1D tensor.')
+    if m.min() < 0:
+        raise ValueError('m must contain only non-negative elements.')
     if p.size(0) != m.size(0):
         raise ValueError('Length of p and m must be equal.')
+    
+    # Check if p contains unique poles
+    unique_poles = torch.tensor([p[0]], dtype=p.dtype)
+    for i in range(1,p.numel()):
+        is_unique = True
+        for j in range(unique_poles.numel()):
+            if torch.allclose(p[i], unique_poles[j]):
+                is_unique = False
+                break
+        if is_unique:
+            unique_poles = torch.cat((unique_poles, p[i].unsqueeze(0)))
+            #print(f"unique poles gained a pole, current value: {unique_poles}")
+    if unique_poles.numel() != p.numel():
+        raise ValueError('Poles in p must be unique.')
 
     n = p.size(0)
     pp = torch.zeros((1, int(m.sum())), dtype=p.dtype)
