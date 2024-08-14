@@ -141,11 +141,11 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
         Number of points in case of uniform sampling.
     mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the discrete real MT system (row vector). Must be a 1-dimensional tensor.
-    cUk : torch.Tensor, dtype=??
+    cUk : torch.Tensor, any real number
         Coefficients of the linear combination to form (row vector)
         with respect to the real part of the discrete real MT system
         defined by 'mpoles'.
-    cVk : torch.Tensor, dtype=??
+    cVk : torch.Tensor, any real number
         Coefficients of the linear combination to form (row vector)
         with respect to the imaginary part of the discrete real MT 
         system defined by 'mpoles'.

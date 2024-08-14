@@ -241,7 +241,7 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
-    TODO: F,G - should they have at least 2 elements? Are they 1D tensors? Should they be within the unit disk?
+    TODO: F,G - should they have at least 2 elements? CAN BE any complex numbers
     some help: source book page 16, 22 - find <F,G> notation
     Parameters
     ----------
