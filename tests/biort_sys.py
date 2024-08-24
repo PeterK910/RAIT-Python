@@ -32,7 +32,7 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from .util import check_poles, multiplicity
+    from util import check_poles, multiplicity
     
     if type(length) != int:
         raise TypeError('Length must be an integer.')

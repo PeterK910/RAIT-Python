@@ -224,14 +224,14 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
 
     Parameters
     ----------
-    v : torch.Tensor
-        An arbitrary vector.
-    poles : torch.Tensor
-        Poles of the modified basic rational system.
+    v : torch.Tensor, dtype=torch.complex64
+        An arbitrary 1D tensor.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system. Must be a 1D tensor. Each pole must be inside the unit circle.
 
     Returns
     -------
-    co : torch.Tensor
+    co : torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the modified basic rational system defined by 'poles'.
     err : float
         L^2 norm of the approximation error.
@@ -243,22 +243,24 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     """
 
     from biort_sys import biort_system
+    from util import check_poles
     
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.dim() != 1:
-        raise ValueError('Parameter `v` must be a 1D torch.Tensor.')
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.dim() != 1:
+        raise ValueError('v must be a 1D tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(poles, torch.Tensor) or poles.dim() != 1:
-        raise ValueError('Parameter `poles` must be a 1D torch.Tensor.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must have absolute values less than 1.')
+    check_poles(poles)
 
     # Calculate biorthogonal system elements 
     bts = biort_system(v.size(0), poles)
-
+    print(f"bts: {bts}")
     # Calculate Fourier coefficients
-    co = torch.matmul(bts, v.unsqueeze(1)) / v.size(0)
+    co = torch.conj(torch.matmul(bts, torch.conj(v)) / v.size(0))
+    print(f"co: {co}")
     
     # Calculate modified rational system elements
     mlf = mlf_system(v.size(0), poles)
@@ -266,7 +268,7 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     # Calculate approximation error
     err = torch.norm(torch.matmul(co.t(), mlf) - v)
 
-    return co.squeeze(), err.item()
+    return co, err.item()
 
 def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
     """

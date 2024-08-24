@@ -64,3 +64,26 @@ def test_mlfdc_system():
     with pytest.raises(ValueError, match="eps must be positive."):
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mlfdc_system(mpoles, eps=-1.)
+
+def test_mlf_coeffs():
+    from .rat_sys import mlf_coeffs
+    v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_result = torch.tensor([-1.060232-0.164866j,0.697041-0.375806j,-0.303476+1.207338j], dtype=torch.complex64)
+    assert torch.allclose(mlf_coeffs(v, mpoles), expected_result)
+
+    #input validation
+    with pytest.raises(TypeError, match="v must be a torch.Tensor."):
+        v = [2j, 0, -2]
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlf_coeffs(v, mpoles)
+    with pytest.raises(ValueError, match="v must be a 1D tensor."):
+        v = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlf_coeffs(v, mpoles)
+    with pytest.raises(TypeError, match="v must be a complex tensor."):
+        v = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlf_coeffs(v, mpoles)
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+    
