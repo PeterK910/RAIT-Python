@@ -247,7 +247,7 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     """
 
     from biort_sys import biort_system
-    from util import check_poles
+    from util import check_poles, conj_trans
     
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -261,10 +261,6 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
 
     # Calculate biorthogonal system elements 
     bts = biort_system(v.size(0), poles)
-
-    #helper conjugate transpose function
-    def conj_trans(a:torch.Tensor) -> torch.Tensor:
-        return torch.conj(a).t()
     
     # Calculate Fourier coefficients
     co = conj_trans(torch.matmul(bts, conj_trans(v)) / v.size(0))

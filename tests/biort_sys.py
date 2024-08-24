@@ -269,7 +269,7 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
         If input parameters are invalid.
     """
     from rat_sys import mlf_system
-    from util import check_poles
+    from util import check_poles, conj_trans
 
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -286,9 +286,6 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     bts = biort_system(v.size(0), poles)
     
     # Calculate coefficients and error
-    # helper conjugate transpose function
-    def conj_trans(a):
-        return torch.conj(a).t()
     
     co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
     

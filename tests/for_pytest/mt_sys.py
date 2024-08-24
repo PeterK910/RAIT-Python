@@ -252,14 +252,14 @@ def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float
 
     Parameters
     ----------
-    v : torch.Tensor
-        An arbitrary vector.
-    poles : torch.Tensor
-        Poles of the rational system.
+    v : torch.Tensor, dtype=torch.complex64
+        An arbitrary vector. Must be a 1-dimensional tensor.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1-dimensional tensor. Elements must be inside the unit circle.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the Malmquist-Takenaka 
         system defined by poles.
     float
@@ -270,22 +270,22 @@ def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float
     ValueError
         If input parameters are invalid.
     """
-
+    from .util import check_poles, conj_trans
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    check_poles(poles)
 
     # Calculate the Malmquist-Takenaka system elements
     mts = mt_system(v.size(0), poles)
     
     # Calculate coefficients and error
-    co = (mts @ v.unsqueeze(1) / v.size(0)).squeeze()
+    co = conj_trans(torch.matmul(mts, conj_trans(v)) / v.size(0))
     err = torch.linalg.norm(co @ mts - v).item()
     
     return co, err

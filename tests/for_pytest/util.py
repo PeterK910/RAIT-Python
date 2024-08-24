@@ -5,6 +5,25 @@ from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 from torchinterp1d import interp1d
 
+def conj_trans(v: torch.Tensor) -> torch.Tensor:
+    """
+    Transpose and conjugate the input tensor.
+    
+    TODO: test this function, even though it is simple
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        Any tensor
+
+    Returns
+    -------
+    torch.Tensor
+        Transposed and conjugated tensor.
+    """
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    return torch.conj(v).t()
 
 def check_poles(poles: torch.Tensor):
     """

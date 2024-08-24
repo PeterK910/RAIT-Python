@@ -71,3 +71,29 @@ def test_mtdr_system():
     with pytest.raises(ValueError, match="eps must be positive"):
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mtdr_system(poles, eps=0.)
+
+def test_mt_coeffs():
+    from .mt_sys import mt_coeffs
+    v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    expected_co = torch.tensor([-0.621933+0.530092j,0.415187+0.256114j,0.348194+0.349086j], dtype=torch.complex64)
+    expected_err = torch.tensor(1.767295)
+    co,err = mt_coeffs(v, poles)
+    err = torch.tensor(err)
+    assert torch.allclose(co, expected_co)
+    assert torch.allclose(err, expected_err)
+
+    #input validation
+    with pytest.raises(TypeError, match="v must be a torch.Tensor."):
+        v = [2j, 0, -2]
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mt_coeffs(v, poles)
+    with pytest.raises(ValueError, match="v must be a 1-dimensional torch.Tensor."):
+        v = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mt_coeffs(v, poles)
+    with pytest.raises(TypeError, match="v must be a complex tensor."):
+        v = torch.tensor([2, 0, -2], dtype=torch.float32)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mt_coeffs(v, poles)
+    #poles is already tested with check_poles(poles) in mt_sys.py
