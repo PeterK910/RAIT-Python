@@ -43,7 +43,6 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
 def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     """
     Maps coordinates in R^2 to parameters in ID.
-    TODO: should every row contain the same number of elements?
     Parameters
     ----------
     k : torch.Tensor, dtype=float64

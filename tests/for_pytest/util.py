@@ -3,6 +3,8 @@ import math
 from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
+from torchinterp1d import interp1d
+
 
 def check_poles(poles: torch.Tensor):
     """
@@ -23,7 +25,7 @@ def check_poles(poles: torch.Tensor):
     if not isinstance(poles, torch.Tensor):
         raise TypeError('poles must be a torch.Tensor.')
     
-    if poles.dtype != torch.complex64:
+    if not poles.is_complex():
         raise TypeError('poles must be complex numbers.')
     
     if poles.ndim != 1:
@@ -171,7 +173,7 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         Non-equidistant complex discretization.
 
     Raises
@@ -206,7 +208,7 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the Blaschke product, expected to be a 1D tensor.
     eps : float, optional
         Accuracy of the real discretization on the unit disc, by default 1e-6.
@@ -342,9 +344,6 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
     """
     Computes the weight function of discrete dot product in H^2(D).
-    TODO: find out if mpoles is a tensor of complex or real numbers. Right now it assumes complex numbers.
-    TODO: find out y,z are complex or real tensors
-    TODO:y and z are SINGLE complex numbers (tensors wiht 1 element), abs <=(!) 1
 
     Parameters
     ----------
@@ -490,10 +489,12 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    sample : torch.Tensor
-        A 1D tensor of uniformly sampled values on [-pi, pi).
-    x : torch.Tensor
-        The values at which interpolation is to be computed.
+    sample : torch.Tensor, dtype=torch.complex64
+        A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
+        NOTE: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not withing [-pi, pi)
+        Despite this, it is used as an input to this function.
+    x : torch.Tensor, dtype=torch.float64
+        The values at which interpolation is to be computed. 1D tensor.
 
     Returns
     -------
@@ -501,17 +502,21 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
         The interpolated values at the points specified by x.
     """
 
-    # Validate input types
+    # Validate input parameters
     if not isinstance(sample, torch.Tensor):
-        raise TypeError("sample must be a torch.Tensor")
+        raise TypeError('sample must be a torch.Tensor.')
+    if sample.ndim != 1:
+        raise ValueError('sample must be a 1-dimensional torch.Tensor.')
+    if not sample.is_complex():
+        raise TypeError('sample must have complex elements.')
+    
+    
     if not isinstance(x, torch.Tensor):
-        raise TypeError("x must be a torch.Tensor")
-
-    # Validate input dimensions
-    if sample.dim() != 1:
-        raise ValueError("sample must be a 1D tensor")
-    if x.dim() != 1:
-        raise ValueError("x must be a 1D tensor")
+        raise TypeError('x must be a torch.Tensor.')
+    if x.ndim != 1:
+        raise ValueError('x must be a 1-dimensional torch.Tensor.')
+    if not x.is_floating_point():
+        raise TypeError('x must have real elements.')
 
     # Number of samples
     len = sample.size(0)
@@ -519,18 +524,10 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Create a tensor of sample points
     sx = torch.linspace(-torch.pi, torch.pi, len)
 
-    # Reshape x to (N, 1, 1) and sx to (1, len, 1) for broadcasting
-    x_reshaped = x.view(-1, 1, 1)
-    sx_reshaped = sx.view(1, -1, 1)
-
-    # Compute the ratio for interpolation
-    ratio = (x_reshaped - sx_reshaped) / (2 * torch.pi / len)
-
-    # Use torch.nn.functional.interpolate for interpolation
-    y = torch.nn.functional.interpolate(sample.view(1, 1, -1), scale_factor=ratio, mode='linear', align_corners=True)
-
-    # Squeeze to remove extra dimensions
-    return y.squeeze()
+    # torchinterp1d is used for linear interpolation
+    # https://github.com/aliutkus/torchinterp1d
+    y = interp1d(sx, sample, x)
+    return y
 
 
 

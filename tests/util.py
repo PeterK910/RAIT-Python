@@ -3,6 +3,8 @@ import math
 from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
+from torchinterp1d import interp1d
+
 
 def check_poles(poles: torch.Tensor):
     """
@@ -23,7 +25,7 @@ def check_poles(poles: torch.Tensor):
     if not isinstance(poles, torch.Tensor):
         raise TypeError('poles must be a torch.Tensor.')
     
-    if poles.dtype != torch.complex64:
+    if not poles.is_complex():
         raise TypeError('poles must be complex numbers.')
     
     if poles.ndim != 1:
@@ -487,15 +489,15 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     """
     Interpolate values between uniform sampling points using linear interpolation.
-    TODO: sample: which of these are acceptable: [-pi,0], [-1,0,1,2], [-pi,pi]?
-    TODO: x: what are the acceptable values for x? Only sure that it is a float. Single number/1D tensor?
-
+    
     Parameters
     ----------
-    sample : torch.Tensor
-        A 1D tensor of uniformly sampled values on [-pi, pi).
-    x : torch.Tensor
-        The values at which interpolation is to be computed.
+    sample : torch.Tensor, dtype=torch.complex64
+        A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
+        NOTE: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not withing [-pi, pi)
+        Despite this, it is used as an input to this function.
+    x : torch.Tensor, dtype=torch.float64
+        The values at which interpolation is to be computed. 1D tensor.
 
     Returns
     -------
@@ -508,17 +510,16 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
         raise TypeError('sample must be a torch.Tensor.')
     if sample.ndim != 1:
         raise ValueError('sample must be a 1-dimensional torch.Tensor.')
-    if sample.dtype != torch.float64:
-        raise TypeError('sample must have float64 elements.')
-    if torch.min(sample) < -torch.pi or torch.max(sample) >= torch.pi:
-        raise ValueError('sample values must be in [-pi, pi).')
-    diffs = torch.diff(sample)  
-    if not torch.allclose(diffs, diffs[0]):
-        raise ValueError('sample must be uniformly sampled.')
+    if not sample.is_complex():
+        raise TypeError('sample must have complex elements.')
+    
     
     if not isinstance(x, torch.Tensor):
         raise TypeError('x must be a torch.Tensor.')
-    #TODO: after specification of sample, x, add more checks for x
+    if x.ndim != 1:
+        raise ValueError('x must be a 1-dimensional torch.Tensor.')
+    if not x.is_floating_point():
+        raise TypeError('x must have real elements.')
 
     # Number of samples
     len = sample.size(0)
@@ -526,18 +527,10 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Create a tensor of sample points
     sx = torch.linspace(-torch.pi, torch.pi, len)
 
-    # Reshape x to (N, 1, 1) and sx to (1, len, 1) for broadcasting
-    x_reshaped = x.view(-1, 1, 1)
-    sx_reshaped = sx.view(1, -1, 1)
-
-    # Compute the ratio for interpolation
-    ratio = (x_reshaped - sx_reshaped) / (2 * torch.pi / len)
-
-    # Use torch.nn.functional.interpolate for interpolation
-    y = torch.nn.functional.interpolate(sample.view(1, 1, -1), scale_factor=ratio, mode='linear', align_corners=True)
-
-    # Squeeze to remove extra dimensions
-    return y.squeeze()
+    # torchinterp1d is used for linear interpolation
+    # https://github.com/aliutkus/torchinterp1d
+    y = interp1d(sx, sample, x)
+    return y
 
 
 

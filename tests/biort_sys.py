@@ -353,10 +353,9 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     length : int
         Number of points in case of uniform sampling.
     mpoles : torch.Tensor, dtype=torch.complex64
-        Poles of the biorthogonal system (1-dimensional tensor).
+        Poles of the biorthogonal system (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor, dtype=torch.complex64
-    TODO: coeffs dtype?
-        Coefficients of the linear combination to form (1-dimensional tensor).
+        Complex oefficients of the linear combination to form (1-dimensional tensor).
 
     Returns
     -------

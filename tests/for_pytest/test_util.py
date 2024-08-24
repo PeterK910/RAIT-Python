@@ -107,3 +107,35 @@ def test_discretize_dr():
 
     #input validation
     #a is already tested with check_poles(a) in util.py, so done here
+
+def test_subsample():
+    from .util import subsample, discretize_dr
+    sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    x = discretize_dr(sample)
+    expected_result=torch.tensor([[0.000000-0.405495j, 0.000000-0.274911j, 0.000000-0.173307j, 0.000000-0.059357j, 0.041643+0.000000j, 0.183655+0.000000j, 0.392604+0.000000j]], dtype=torch.complex128)
+    assert torch.allclose(subsample(sample, x), expected_result)
+
+    #input validation
+    #sample
+    with pytest.raises(TypeError, match="sample must be a torch.Tensor."):
+        sample = [1, 2, 3]
+        subsample(sample, x)
+    with pytest.raises(ValueError, match="sample must be a 1-dimensional torch.Tensor."):
+        sample = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        subsample(sample, x)
+    with pytest.raises(TypeError, match="sample must have complex elements."):
+        sample = torch.tensor([1.0, 2.0, 3.0])
+        subsample(sample, x)
+    #x
+    with pytest.raises(TypeError, match="x must be a torch.Tensor."):
+        sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        x = [1, 2, 3]
+        subsample(sample, x)
+    with pytest.raises(ValueError, match="x must be a 1-dimensional torch.Tensor"):
+        sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        x = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        subsample(sample, x)
+    with pytest.raises(TypeError, match="x must have real elements."):
+        sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        x = torch.tensor([1.0+1j, 2.0, 3.0])
+        subsample(sample, x)
