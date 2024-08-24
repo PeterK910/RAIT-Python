@@ -70,7 +70,10 @@ def test_mlf_coeffs():
     v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor([-1.060232-0.164866j,0.697041-0.375806j,-0.303476+1.207338j], dtype=torch.complex64)
-    assert torch.allclose(mlf_coeffs(v, mpoles), expected_result)
+    co,err = mlf_coeffs(v, mpoles)
+    err = torch.tensor(err)
+    assert torch.allclose(co, expected_result)
+    assert torch.allclose(err, torch.tensor(1.767296))
 
     #input validation
     with pytest.raises(TypeError, match="v must be a torch.Tensor."):

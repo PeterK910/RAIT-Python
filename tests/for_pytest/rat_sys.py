@@ -242,8 +242,8 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
         If input parameters are incorrect or if poles are outside the valid range.
     """
 
-    from biort_sys import biort_system
-    from util import check_poles
+    from .biort_sys import biort_system
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -257,16 +257,18 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
 
     # Calculate biorthogonal system elements 
     bts = biort_system(v.size(0), poles)
-    print(f"bts: {bts}")
-    # Calculate Fourier coefficients
-    co = torch.conj(torch.matmul(bts, torch.conj(v)) / v.size(0))
-    print(f"co: {co}")
+
+    #helper conjugate transpose function
+    def conj_trans(a:torch.Tensor) -> torch.Tensor:
+        return torch.conj(a).t()
     
+    # Calculate Fourier coefficients
+    co = conj_trans(torch.matmul(bts, conj_trans(v)) / v.size(0))
     # Calculate modified rational system elements
     mlf = mlf_system(v.size(0), poles)
-
     # Calculate approximation error
     err = torch.norm(torch.matmul(co.t(), mlf) - v)
+
 
     return co, err.item()
 

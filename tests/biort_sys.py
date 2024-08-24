@@ -250,14 +250,14 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
 
     Parameters
     ----------
-    v : torch.Tensor
+    v : torch.Tensor, dtype=torch.complex64
         An arbitrary vector.
-    poles : torch.Tensor
-        Poles of the biorthogonal system.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. Must be 1D tensor. Must be inside the unit circle.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the biorthogonal 
         system defined by poles.
     float
@@ -269,25 +269,34 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
         If input parameters are invalid.
     """
     from rat_sys import mlf_system
+    from util import check_poles
 
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    check_poles(poles)
     
     # Calculate the biorthogonal system elements
     mlfs = mlf_system(v.size(0), poles)
     bts = biort_system(v.size(0), poles)
     
     # Calculate coefficients and error
-    co = (mlfs @ v.unsqueeze(1) / v.size(0)).squeeze()
-    err = torch.linalg.norm(co @ bts - v).item()
+    # helper conjugate transpose function
+    def conj_transpose(a):
+        return torch.transpose(torch.conj(a), 0, 1)
     
+    co = conj_transpose(mlfs * conj_transpose(v) / v.size(0))
+    
+    err = torch.linalg.norm(co @ bts - v).item()
+    print(f"mlfs = {mlfs}")
+    print(f"bts = {bts}")
+    print(f"co = {co}")
+    print(f"err = {err}")
     return co, err
 
 def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
