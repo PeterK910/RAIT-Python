@@ -215,4 +215,96 @@ def test_dotdc():
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         t = torch.tensor([1.0j, 2.0, 3.0, 4.0])
         dotdc(F, G, poles, t)
-    
+
+def test_dotdr():
+    from .util import dotdr
+    F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+    G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    t = torch.tensor([1, 2], dtype=torch.float32)
+    expected_result = torch.tensor(0.+8.918623j, dtype=torch.complex64)
+    assert torch.allclose(dotdr(F, G, poles, t), expected_result)
+
+    #input validation
+    #F
+    with pytest.raises(TypeError, match="F must be a torch.Tensor."):
+        F = [1, 2, 3]
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    with pytest.raises(ValueError, match="F must be a 1-dimensional torch.Tensor."):
+        F = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    with pytest.raises(TypeError, match="F must have complex elements."):
+        F = torch.tensor([1.0, 2.0, 3.0])
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    #G
+    with pytest.raises(TypeError, match="G must be a torch.Tensor."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = [1, 2, 3]
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    with pytest.raises(ValueError, match="G must be a 1-dimensional torch.Tensor."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    with pytest.raises(TypeError, match="G must have complex elements."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([1.0, 2.0, 3.0])
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+   
+    #mpoles is already tested with check_poles(mpoles) in util.py, so done here
+    #t
+    with pytest.raises(TypeError, match="t must be a torch.Tensor."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = [1, 2, 3,4]
+        dotdr(F, G, poles, t)
+    with pytest.raises(ValueError, match="t must be a 1-dimensional torch.Tensor."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([[1, 2, 3,4], [5, 6, 7, 8]])
+        dotdr(F, G, poles, t)
+    with pytest.raises(TypeError, match="t must have real elements."):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1.0j, 2.0, 3.0, 4.0])
+        dotdr(F, G, poles, t)
+
+    #F and G and t have different lengths
+    #F differs from all
+    with pytest.raises(ValueError, match='F, G, and t must have the same length.'):
+        F = torch.tensor([2*torch.pi, torch.pi,0], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    #G differs from all
+    with pytest.raises(ValueError, match='F, G, and t must have the same length.'):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi, 0], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2], dtype=torch.float32)
+        dotdr(F, G, poles, t)
+    #t differs from all
+    with pytest.raises(ValueError, match='F, G, and t must have the same length.'):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([1, 2, 3], dtype=torch.float32)
+        dotdr(F, G, poles, t)

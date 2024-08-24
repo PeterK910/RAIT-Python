@@ -304,21 +304,21 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes discrete real dot product of two functions in H^2(ID).
-
+    NOTE: F and G AND t are expected to have the same number of elements
     Parameters
     ----------
-    F : torch.Tensor
-        Values of the first function (ID -> IC) on the unit disk.
-    G : torch.Tensor
-        Values of the second function (ID -> IC) on the unit disk.
-    mpoles : torch.Tensor
-        Poles of the rational system excluding zero.
-    t : torch.Tensor
-        Arguments for which to evaluate the dot product.
+    F : torch.Tensor, dtype=torch.complex64
+        Values of the first function (ID -> IR) on the unit disk. 1D tensor. Must have the same number of elements as 'G'.
+    G : torch.Tensor, dtype=torch.complex64
+        Values of the second function (ID -> IR) on the unit disk. 1D tensor. Must have the same number of elements as 'F'.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1D tensor with elements inside the unit circle.
+    t : torch.Tensor, dtype=torch.float64
+        Arguments for which to evaluate the dot product. 1D tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Values of the real dot product of 'F' and 'G' at 't'.
 
     Raises
@@ -329,25 +329,39 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 
     # Validate input parameters
     if not isinstance(F, torch.Tensor):
-        raise ValueError('F must be a torch.Tensor.')
+        raise TypeError('F must be a torch.Tensor.')
+    if F.ndim!=1:
+        raise ValueError('F must be a 1-dimensional torch.Tensor.')
+    if not F.is_complex():
+        raise TypeError('F must have complex elements.')
     
     if not isinstance(G, torch.Tensor):
-        raise ValueError('G must be a torch.Tensor.')
+        raise TypeError('G must be a torch.Tensor.')
+    if G.ndim!=1:
+        raise ValueError('G must be a 1-dimensional torch.Tensor.')
+    if not G.is_complex():
+        raise TypeError('G must have complex elements.')
+
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
     
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+    check_poles(mpoles)
+    
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('t must be a torch.Tensor.')
+    if t.ndim!=1:
         raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if not t.is_floating_point():
+        raise TypeError('t must have real elements.')
 
-    if F.size(0) != G.size(0):
-        raise ValueError('F and G must have the same number of elements.')
-
+    if F.size(0) != G.size(0) or F.size(0) != t.size(0):
+        raise ValueError('F, G, and t must have the same length.')
+    
     # Prepend zero to the poles
-    mpoles_with_zero = torch.cat((torch.zeros(1), mpoles))
-
+    mpoles = torch.cat((torch.zeros(1), mpoles))
     # Compute the kernel values
-    kernel_vals = kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles_with_zero)
+    kernel_vals = torch.zeros(t.size(0), dtype=torch.complex64)
+    for i in range(kernel_vals.size(0)):
+        kernel_vals[i] = kernel(torch.exp(1j * t[i]), torch.exp(1j * t[i]), mpoles)
 
     # Compute the real discrete dot product
     s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel_vals) - 1))
