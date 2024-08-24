@@ -572,10 +572,10 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the continuous systems.
-    coeffs : torch.Tensor
-        Coefficients with respect to the continuous system 'base1'.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the continuous systems. Must be a 1D tensor. Must be inside the unit circle.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients with respect to the continuous system 'base1'. 1D tensor.
     base1 : str
         Type of the continuous system to be converted.
     base2 : str
@@ -596,25 +596,27 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     from rat_sys import lf_system, mlf_system
 
     # Validate input parameters
-    if poles.size(0) != 1:
-        raise ValueError("poles must be a 1D tensor")
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
     if length < 2:
-        raise ValueError("length must be an integer greater than or equal to 2.")
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+        raise ValueError('length must be an integer greater than or equal to 2.')
     
-    if coeffs.size(0) != 1:
-        raise ValueError('Coeffs should be row vector!')
+    check_poles(poles)
+
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must have complex elements.')
     
     if not isinstance(base1, str):
         raise TypeError('Base1 must be a string.')
-    
-    if not isinstance(base2, str):
-        raise TypeError('Base2 must be a string.')
-    
     if base1 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base1! Choose from lf, mlf, biort, mt.')
     
+    if not isinstance(base2, str):
+        raise TypeError('Base2 must be a string.')
     if base2 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base2! Choose from lf, mlf, biort, mt.')
     
@@ -634,14 +636,12 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     # Get systems for base1 and base2
     g1 = get_system(base1, length, poles)
     g2 = get_system(base2, length, poles)
-    #TODO: check if the lines below are correct
-    # Perform matrix operations
-    F = g1.mm(g1.t()) / length
-    G = g1.mm(g2.t()) / length
-    
-    # Solve linear system and return converted coefficients
-    co = torch.linalg.solve(G, F.mm(coeffs.t())).t()
-    
+
+    F = g1 * torch.conj(g1)/length
+    G = g1 * torch.conj(g2)/length
+    #TODO: check matlab version to know coeffs shape
+    #co = G \ F * coeffs'; - matlab version
+    co = torch.conj(co)
     return co
 
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:
