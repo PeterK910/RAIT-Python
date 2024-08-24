@@ -287,16 +287,18 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     
     # Calculate coefficients and error
     # helper conjugate transpose function
-    def conj_transpose(a):
-        return torch.transpose(torch.conj(a), 0, 1)
+    def conj_trans(a):
+        return torch.conj(a).t()
     
-    co = conj_transpose(mlfs * conj_transpose(v) / v.size(0))
+    co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
     
     err = torch.linalg.norm(co @ bts - v).item()
+    """
     print(f"mlfs = {mlfs}")
     print(f"bts = {bts}")
     print(f"co = {co}")
     print(f"err = {err}")
+    """
     return co, err
 
 def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
