@@ -2,7 +2,7 @@ import torch
 from math import factorial
 from scipy.special import binom
 
-from util import multiplicity
+
 
 def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     """
@@ -17,13 +17,13 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     length : int
-        Number of points in case of uniform sampling.
-    mpoles : torch.Tensor
-        Poles of the biorthogonal system.
+        Number of points in case of uniform sampling. Must be at least 2.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. Must a 1-dimensional tensor with all its elements inside the unit circle.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the biorthogonal system at the uniform sampling points as row vectors.
     
     Raises
@@ -32,13 +32,16 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    np, mp = mpoles.size()
-    if np != 1 or length < 2:
-        raise ValueError('Wrong parameters!')
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    from .util import check_poles, multiplicity
+    
+    if type(length) != int:
+        raise TypeError('Length must be an integer.')
+    if length < 2:
+        raise ValueError('Length must be at least 2.')
+    
+    check_poles(mpoles)
 
-    bts = torch.zeros((mp, length), dtype=torch.cfloat)
+    bts = torch.zeros((mpoles.numel(), length), dtype=torch.complex64)
     t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
     z = torch.exp(1j * t)
 
@@ -75,7 +78,7 @@ def __pszi(l:int, j:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor)
         The calculated values of the biorthogonal polynomial.
     """
     n = len(poles)
-    v = torch.zeros(z.size(), dtype=torch.cfloat)
+    v = torch.zeros(z.size(), dtype=torch.complex64)
     do = __domega(int(multi[l]) - j, l, poles, multi, poles[l])
 
     for s in range(multi[l] - j + 1):
@@ -106,7 +109,7 @@ def __omega(l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -> to
         The calculated values of the Omega base functions.
     """
     n = len(poles)
-    v = torch.ones(z.size(), dtype=torch.cfloat)
+    v = torch.ones(z.size(), dtype=torch.complex64)
     v /= (1 - poles[l].conj() * z) ** multi[l]
 
     # Blaschke-function
@@ -147,7 +150,7 @@ def __domega(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tenso
         The calculated values of the sth derivative of the omega function.
     """
     n = len(poles)
-    Do = torch.zeros((s + 1, len(z)), dtype=torch.cfloat)
+    Do = torch.zeros((s + 1, z.numel()), dtype=torch.complex64)
     Do[0, :] = __omega(l, poles, multi, poles[l]) / __omega(l, poles, multi, z)
 
     for i in range(1, s + 1):
@@ -190,7 +193,7 @@ def __ro(s:int, l:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor) -
     v *= (-1) ** s * factorial(s)
     return v
 
-from util import discretize_dc
+
 
 def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
@@ -198,14 +201,14 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the discrete biorthogonal system.
     eps : float, optional
         Accuracy of the discretization on the unit disc (default is 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The elements of the discrete biorthogonal system at the uniform
         sampling points as row vectors.
 
@@ -214,8 +217,15 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit circle.
     """
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    from .util import check_poles, discretize_dc, multiplicity
+
+    # Validate input parameters
+    check_poles(mpoles)
+
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be positive.')
     
     m = mpoles.numel()
     bts = torch.zeros(m, m+1, dtype=mpoles.dtype)
@@ -226,11 +236,11 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     for j in range(len(multi)):
         for k in range(1, multi[j]+1):
             col = sum(multi[:j]) + k
-            bts[col-1, :] = __pszi(j+1, k, spoles, multi, torch.exp(1j * t))
+            bts[col-1, :] = __pszi(j, k, spoles, multi, torch.exp(1j * t))
 
     return bts
 
-from rat_sys import mlf_system
+
 
 def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float]:
     """
@@ -239,14 +249,14 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
 
     Parameters
     ----------
-    v : torch.Tensor
+    v : torch.Tensor, dtype=torch.complex64
         An arbitrary vector.
-    poles : torch.Tensor
-        Poles of the biorthogonal system.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. Must be 1D tensor. Must be inside the unit circle.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the biorthogonal 
         system defined by poles.
     float
@@ -257,25 +267,28 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     ValueError
         If input parameters are invalid.
     """
-    
+    from .rat_sys import mlf_system
+    from .util import check_poles, conj_trans
+
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    check_poles(poles)
     
     # Calculate the biorthogonal system elements
     mlfs = mlf_system(v.size(0), poles)
     bts = biort_system(v.size(0), poles)
     
     # Calculate coefficients and error
-    co = (mlfs @ v.unsqueeze(1) / v.size(0)).squeeze()
-    err = torch.linalg.norm(co @ bts - v).item()
     
+    co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
+    
+    err = torch.linalg.norm(co @ bts - v).item()
     return co, err
 
 def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
@@ -286,14 +299,18 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the biorthogonal system (row vector).
-    coeffs : torch.Tensor
-        Coefficients of the linear combination to form (row vector).
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
+
+        Must have the same number of elements as 'coeffs'.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients of the linear combination to form (1-dimensional tensor).
+
+        Must have the same number of elements as 'poles'.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a row vector.
     
         It is the linear combination of the LF system elements.
@@ -312,20 +329,26 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
         If input parameters are invalid.
     """
     
-    if not isinstance(length, int) or length < 2:
-        raise ValueError("Length must be an integer greater than or equal to 2.")
+    from .util import check_poles
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError("Poles must be a 1-dimensional torch.Tensor.")
+    # Validate input parameters
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
-        raise ValueError("Coeffs must be a 1-dimensional torch.Tensor.")
+    check_poles(poles)
     
-    if poles.shape[0] != coeffs.shape[0]:
-        raise ValueError("Poles and coeffs must have the same number of elements.")
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
     
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError("Poles must be inside the unit circle!")
+    #coeffs must have the same number of elements as poles
+    if poles.size(0) != coeffs.size(0):
+        raise ValueError('poles and coeffs must have the same number of elements.')
     
     # Calculate the biorthogonal system elements
     v = coeffs @ biort_system(length, poles)
@@ -336,18 +359,20 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     """
     Generates a function in the space spanned by the discrete biorthogonal system.
 
+    TODO: The function uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
+
     Parameters
     ----------
     length : int
         Number of points in case of uniform sampling.
-    mpoles : torch.Tensor
-        Poles of the biorthogonal system (1-dimensional tensor).
-    coeffs : torch.Tensor
-        Coefficients of the linear combination to form (1-dimensional tensor).
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system (1-dimensional tensor). Must be inside the unit circle.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Complex coefficients of the linear combination to form (1-dimensional tensor).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a 1-dimensional tensor.
 
         It is the linear combination of the discrete biorthogonal system elements.
@@ -366,21 +391,26 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
         If input parameters are invalid.
     """
 
+    from .util import check_poles
+    
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
-        raise ValueError('Length must be an integer greater than or equal to 2.')
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
         raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
     
-    if mpoles.shape[0] != coeffs.shape[0]:
+    #coeffs must have the same number of elements as poles
+    if mpoles.size(0) != coeffs.size(0):
         raise ValueError('mpoles and coeffs must have the same number of elements.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
 
     # Calculate the biorthogonal system elements
     bts = biort_system(length, mpoles)
@@ -390,8 +420,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
 
     return v
 
-from util import subsample, dotdc
-from rat_sys import mlfdc_system
+
 
 def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, float]:
     """
@@ -400,16 +429,16 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
 
     Parameters
     ----------
-    v : torch.Tensor
-        An arbitrary vector.
-    mpoles : torch.Tensor
-        Poles of the biorthogonal system.
+    v : torch.Tensor, dtype=torch.complex64
+        An arbitrary 1-dimensional tensor.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. 1-dimensional tensor. Must be inside the unit circle.
     eps : float, optional
         Accuracy of the discretization on the unit disc. Default is 1e-6.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the discrete 
         biorthogonal system defined by 'mpoles'.
     float
@@ -420,27 +449,30 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     ValueError
         If input parameters are invalid.
     """
-
+    from .util import discretize_dc, subsample, dotdc, check_poles
+    from .rat_sys import mlfdc_system
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
+    check_poles(mpoles)
     
     if not isinstance(eps, float):
-        raise ValueError('eps must be a float.')
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Discretize and sample
+    m = mpoles.numel()
     t = discretize_dc(mpoles, eps)
     samples = subsample(v, t)
 
     # Calculate coefficients
-    m = len(mpoles)
-    co = torch.zeros(m)
+    co = torch.zeros(m, dtype=torch.complex64)
     mlf = mlfdc_system(mpoles, eps)
 
     for i in range(m):
@@ -449,7 +481,7 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     # Calculate error
     len_v = len(v)
     bts = biort_system(len_v, mpoles)
-    err = torch.norm(co @ bts - v).item()
+    err = torch.linalg.norm(co @ bts - v).item()
 
     return co, err
 

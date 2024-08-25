@@ -3,7 +3,7 @@ import pytest
 import re 
 
 def test_biort_system():
-    from .biort_sys import biort_system
+    from rait.biort_sys import biort_system
 
     length = 4
     mpoles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
@@ -26,7 +26,7 @@ def test_biort_system():
     
 
 def test_biortdc_system():
-    from .biort_sys import biortdc_system
+    from rait.biort_sys import biortdc_system
     mpoles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
         [[-1.650000-1.050000j,  2.082207+3.325435j,  1.467794-0.975437j, -1.650001-1.049997j],
@@ -44,7 +44,7 @@ def test_biortdc_system():
         biortdc_system(mpoles, eps=0.)
 
 def test_biort_coeffs():
-    from .biort_sys import biort_coeffs
+    from rait.biort_sys import biort_coeffs
     v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     expected_co = torch.tensor([-0.718146+0.612097j,-0.666667+0.666667j,-0.666667+0.829345j], dtype=torch.complex64)
@@ -70,7 +70,7 @@ def test_biort_coeffs():
     #poles is already tested with check_poles(poles) in biort_sys.py
 
 def test_biortdc_coeffs():
-    from .biort_sys import biortdc_coeffs
+    from rait.biort_sys import biortdc_coeffs
 
     v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
@@ -106,7 +106,7 @@ def test_biortdc_coeffs():
         biortdc_coeffs(v, mpoles, eps=0.)
 
 def test_biort_generate():
-    from .biort_sys import biort_generate
+    from rait.biort_sys import biort_generate
     length=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
@@ -151,7 +151,7 @@ def test_biort_generate():
         biort_generate(length, poles, coeffs)
         
 def test_biortdc_generate():
-    from .biort_sys import biortdc_generate
+    from rait.biort_sys import biortdc_generate
     length=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)

@@ -3,7 +3,7 @@ import pytest
 import re 
 
 def test_coords2params():
-    from .simplex import coords2params
+    from rait.simplex import coords2params
     k=torch.tensor([3,3,1,0,-1,4],dtype=torch.float64)
     expected_result=torch.tensor([0.688247+0.688247j,0.707107+0.000000j,-0.235702+0.942809j],dtype=torch.complex64)
     assert torch.allclose(coords2params(k),expected_result)
@@ -23,7 +23,7 @@ def test_coords2params():
         coords2params(k)
 
 def test_coords2params_all():
-    from .simplex import coords2params_all
+    from rait.simplex import coords2params_all
     k=torch.tensor([[1,1,0,1,-1,0],[1,1,0,1,-1,-1]],dtype=torch.float64)
     expected_result=torch.tensor(
         [[ 0.577350+0.577350j,0.000000+0.707107j,-0.707107+0.000000j],
@@ -45,7 +45,7 @@ def test_coords2params_all():
         coords2params_all(k)
 
 def test_multiply_poles():
-    from .simplex import multiply_poles
+    from rait.simplex import multiply_poles
 
     p = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     m=torch.tensor([1,0,3], dtype=torch.int64)

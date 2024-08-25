@@ -5,7 +5,7 @@ import re
 
 #arg_fun test
 def test_arg_fun():
-    from .blaschke import arg_fun
+    from rait.blaschke import arg_fun
 
     a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
     t = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
@@ -57,7 +57,7 @@ def test_arg_fun():
         arg_fun(a, t)
    
 def test_argdr_fun():
-    from .blaschke import argdr_fun
+    from rait.blaschke import argdr_fun
 
     a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     t = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
@@ -93,7 +93,7 @@ def test_argdr_fun():
         argdr_fun(a, t)
 
 def test_argdr_inv():
-    from .blaschke import argdr_inv
+    from rait.blaschke import argdr_inv
     #when first parameter is 1 number
     a = torch.tensor([-0.5j], dtype=torch.complex64)
     b = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
@@ -153,7 +153,7 @@ def test_argdr_inv():
         argdr_inv(a, b, epsi=-1.)
 
 def test_arg_der():
-    from .blaschke import arg_der
+    from rait.blaschke import arg_der
     a = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     t = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
     expected_result = torch.tensor([1.498950, 1.432060, 1.343517], dtype=torch.float64)
@@ -217,7 +217,7 @@ def test_arg_der():
         pytest.fail('argdr_fun raised ValueError unexpectedly!')
 
 def test_arg_inv():
-    from .blaschke import arg_inv
+    from rait.blaschke import arg_inv
     #when first parameter is 1 number
     a = torch.tensor([-0.5j], dtype=torch.complex64)
     b = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
@@ -276,7 +276,7 @@ def test_arg_inv():
         b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
         arg_inv(a, b, epsi=-1.)
 def test_blaschkes():
-    from .blaschke import blaschkes
+    from rait.blaschke import blaschkes
     len=3
     poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
