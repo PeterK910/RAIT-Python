@@ -407,3 +407,104 @@ def test_coeff_conv():
         base1='lf'
         base2='biort1'
         coeff_conv(length, poles, coeffs, base1, base2)
+
+def test_coeffd_conv():
+    from .util import coeffd_conv
+
+    #mlfdc to biortdc
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+    base1='mlfdc'
+    base2='biortdc'
+    result = coeffd_conv(poles, coeffs, base1, base2)
+    expected_result = torch.tensor([5.529412+-1.882353j,5.000000+-2.000000j,4.823529+-1.960784j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+
+    #mtdc to mlfdc
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+    base1='mtdc'
+    base2='mlfdc'
+    result = coeffd_conv(poles, coeffs, base1, base2)
+    expected_result = torch.tensor([5.196152+-0.401924j,-6.928203+4.000000j,4.330127+-2.598076j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+
+    #input validation
+    #poles is already tested with check_poles(poles) in util.py, so done here
+    #coeffs
+    with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = [3, 2, -2j]
+        base1='mtdc'
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([[3, 2, -2j], [3, 2, -2j]])
+        base1='mtdc'
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    with pytest.raises(TypeError, match="coeffs must have complex elements."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, 3], dtype=torch.float64)
+        base1='mtdc'
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    #coeffs and poles have different lengths
+    with pytest.raises(ValueError, match="coeffs must have the same length as poles."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2], dtype=torch.complex64)
+        base1='mtdc'
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    #base1
+    with pytest.raises(TypeError, match="base1 must be a string."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1=3
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="Invalid system type for base1! Choose from mlfdc, biortdc, mtdc."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='mtdc1'
+        base2='mlfdc'
+        coeffd_conv(poles, coeffs, base1, base2)
+    #base2
+    with pytest.raises(TypeError, match="base2 must be a string."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='mtdc'
+        base2=3
+        coeffd_conv(poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="Invalid system type for base2! Choose from mlfdc, biortdc, mtdc."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='mtdc'
+        base2='mlfdc1'
+        coeffd_conv(poles, coeffs, base1, base2)
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='mtdc'
+        base2='mlfdc'
+        eps='0.1'
+        coeffd_conv(poles, coeffs, base1, base2, eps)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='mtdc'
+        base2='mlfdc'
+        eps=0.
+        coeffd_conv(poles, coeffs, base1, base2, eps)

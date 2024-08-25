@@ -674,11 +674,11 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:
     """
     Converts the coefficients between the discrete systems base1 and base2.
-
+    NOTE: coeffs has to be the same length as poles
     Parameters
     ----------
-    poles : torch.Tensor
-        Poles of the discrete systems (1-dimensional tensor).
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete systems (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor
         Coefficients with respect to the discrete system 'base1' (1-dimensional tensor).
     base1 : str
@@ -690,7 +690,7 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Converted coefficients with respect to the system 'base2'.
 
     Raises
@@ -698,31 +698,37 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     ValueError
         If input parameters are invalid.
     """
-    from rat_sys import mlfdc_system
-    from biort_sys import biortdc_system
-    from mt_sys import mtdc_system
+    from .rat_sys import mlfdc_system
+    from .biort_sys import biortdc_system
+    from .mt_sys import mtdc_system
 
     # Validate input parameters
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    check_poles(poles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
-        raise ValueError('Coeffs should be a 1-dimensional torch.Tensor.')
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must have complex elements.')
     
-    if not isinstance(base1, str) or not isinstance(base2, str):
-        raise ValueError('Base1 and Base2 must be strings.')
-    
-    if not isinstance(eps, float):
-        raise ValueError('Eps must be a float.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    #coeffs has to be the same length as poles
+    if coeffs.size(0) != poles.size(0):
+        raise ValueError('coeffs must have the same length as poles.')
 
+    if not isinstance(base1, str):
+        raise TypeError('base1 must be a string.')
     if base1 not in ['mlfdc', 'biortdc', 'mtdc']:
         raise ValueError('Invalid system type for base1! Choose from mlfdc, biortdc, mtdc.')
-    
+    if not isinstance(base2, str):
+        raise TypeError('base2 must be a string.')
     if base2 not in ['mlfdc', 'biortdc', 'mtdc']:
         raise ValueError('Invalid system type for base2! Choose from mlfdc, biortdc, mtdc.')
+    
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
     
     # Helper function
     def get_system(base, mpoles, eps):
@@ -740,10 +746,17 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     g2 = get_system(base2, poles, eps)
 
     # Convert coefficients between systems
-    F = g1 @ g1.t() / coeffs.shape[0]
-    G = g1 @ g2.t() / coeffs.shape[0]
-    
-    co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
+    F = g1 @ conj_trans(g1) / coeffs.size(0)
+    G = g1 @ conj_trans(g2) / coeffs.size(0)
+    print(f"g1: {g1}")
+    print(f"g2: {g2}")
+    print(f"F: {F}")
+    print(f"G: {G}")
+    co = torch.linalg.solve(G, F)
+    print(f"G\\F: {co}")
+    co = co @ conj_trans(coeffs)
+    print(f"G\\F*coeffs': {co}")
+    co = conj_trans(co)
 
     return co
 
