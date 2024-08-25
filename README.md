@@ -3,6 +3,9 @@
 Python >= 3.9 recommended, as there are type hints with tuples
 
 Requires Pytorch >= 2.3 (likely runs on lower versions, though untested)
+
+https://pytorch.org/get-started/locally/
+
 Requires Spicy (for binom)
 
 ## Presentation
