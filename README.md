@@ -45,7 +45,7 @@ Type `pip install -e .` in the root folder of this repo.
 
 `pip install pytest`
 
-`python -m pytest`
+`python -m pytest` in the root folder of this repo.
 
 
 
