@@ -21,7 +21,7 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
-    from util import check_poles
+    from .util import check_poles
 
     # Validate input parameters
     if not isinstance(len, int):
@@ -72,7 +72,7 @@ def mtdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
-    from util import check_poles ,discretize_dc
+    from .util import check_poles ,discretize_dc
     # Validate input parameters
     check_poles(mpoles)
     if not isinstance(eps, float):
@@ -169,7 +169,7 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
         If 'mpoles' values are greater than or equal to 1.
     """
-    from util import check_poles
+    from .util import check_poles
     # Validate input parameters
     if not isinstance(length, int):
         raise TypeError("length must be an integer.")
@@ -243,7 +243,7 @@ def mtdr_system(poles: torch.Tensor, eps:float=1e-6) -> tuple[torch.Tensor, torc
     ValueError
         If any of the poles have a magnitude greater than or equal to 1.
     """
-    from util import check_poles ,discretize_dr
+    from .util import check_poles ,discretize_dr
     # Validate input parameters
     check_poles(poles)
     if not isinstance(eps, float):
@@ -288,7 +288,7 @@ def mt_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, float
     ValueError
         If input parameters are invalid.
     """
-    from util import check_poles, conj_trans
+    from .util import check_poles, conj_trans
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
         raise TypeError('v must be a torch.Tensor.')
@@ -342,7 +342,7 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
         If input parameters are invalid.
     """
 
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -400,7 +400,7 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
     ValueError
         If input parameters are invalid.
     """
-    from util import subsample, dotdc, discretize_dc, check_poles
+    from .util import subsample, dotdc, discretize_dc, check_poles
 
     # Validate input parameters
     if not isinstance(signal, torch.Tensor):
@@ -471,7 +471,7 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
         If input parameters are invalid.
     """
 
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -533,7 +533,7 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     ValueError
         If input parameters are invalid.
     """
-    from util import discretize_dr, subsample, dotdr, check_poles
+    from .util import discretize_dr, subsample, dotdr, check_poles
 
     # Validate input parameters
     if not isinstance(v, torch.Tensor):

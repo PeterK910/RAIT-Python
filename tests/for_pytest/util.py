@@ -198,7 +198,7 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
-    from blaschke import arg_inv
+    from .blaschke import arg_inv
 
     # Validate input parameters
     check_poles(mpoles)
@@ -240,7 +240,7 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
-    from blaschke import argdr_inv
+    from .blaschke import argdr_inv
 
     if torch.max(torch.abs(mpoles)) >= 1:
         raise ValueError("Poles must be inside the unit disc")
@@ -610,9 +610,9 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     ValueError
         If input parameters are invalid.
     """
-    from mt_sys import mt_system
-    from biort_sys import biort_system
-    from rat_sys import lf_system, mlf_system
+    from .mt_sys import mt_system
+    from .biort_sys import biort_system
+    from .rat_sys import lf_system, mlf_system
 
     # Validate input parameters
     if not isinstance(length, int):
@@ -695,9 +695,9 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     ValueError
         If input parameters are invalid.
     """
-    from rat_sys import mlfdc_system
-    from biort_sys import biortdc_system
-    from mt_sys import mtdc_system
+    from .rat_sys import mlfdc_system
+    from .biort_sys import biortdc_system
+    from .mt_sys import mtdc_system
 
     # Validate input parameters
     check_poles(poles)

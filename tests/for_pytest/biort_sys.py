@@ -32,7 +32,7 @@ def biort_system(length:int, mpoles:torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from util import check_poles, multiplicity
+    from .util import check_poles, multiplicity
     
     if type(length) != int:
         raise TypeError('Length must be an integer.')
@@ -217,7 +217,7 @@ def biortdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit circle.
     """
-    from util import check_poles, discretize_dc, multiplicity
+    from .util import check_poles, discretize_dc, multiplicity
 
     # Validate input parameters
     check_poles(mpoles)
@@ -267,8 +267,8 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     ValueError
         If input parameters are invalid.
     """
-    from rat_sys import mlf_system
-    from util import check_poles, conj_trans
+    from .rat_sys import mlf_system
+    from .util import check_poles, conj_trans
 
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -300,7 +300,7 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
     length : int
         Number of points in case of uniform sampling.
     poles : torch.Tensor, dtype=torch.complex64
-        Poles of the biorthogonal system (1-dimensional tensor). Must be inside the unit circle.
+        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
 
         Must have the same number of elements as 'coeffs'.
     coeffs : torch.Tensor, dtype=torch.complex64
@@ -329,7 +329,7 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
         If input parameters are invalid.
     """
     
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -391,7 +391,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
         If input parameters are invalid.
     """
 
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -408,7 +408,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     if not coeffs.is_complex():
         raise TypeError('coeffs must be a complex tensor.')
     
-    #coeffs must have the same number of elements as mpoles
+    #coeffs must have the same number of elements as poles
     if mpoles.size(0) != coeffs.size(0):
         raise ValueError('mpoles and coeffs must have the same number of elements.')
 
@@ -449,8 +449,8 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     ValueError
         If input parameters are invalid.
     """
-    from util import discretize_dc, subsample, dotdc, check_poles
-    from rat_sys import mlfdc_system
+    from .util import discretize_dc, subsample, dotdc, check_poles
+    from .rat_sys import mlfdc_system
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
         raise TypeError('v must be a torch.Tensor.')

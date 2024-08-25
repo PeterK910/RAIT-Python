@@ -102,7 +102,7 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
-    from util import check_poles
+    from .util import check_poles
     # Validate input parameters
     check_poles(p)
     if not isinstance(m, torch.Tensor):

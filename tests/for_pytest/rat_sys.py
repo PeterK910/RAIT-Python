@@ -23,7 +23,7 @@ def mlf_system(length: int, mpoles: torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from util import check_poles, multiplicity
+    from .util import check_poles, multiplicity
     # Validate input parameters
     if not isinstance(length, int):
         raise TypeError('Length must be an integer.')
@@ -68,7 +68,7 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
         If the number of poles is not 1 or the length is less than 2.
         Also, if the poles are not inside the unit circle.
     """
-    from util import check_poles
+    from .util import check_poles
     # Validate input parameters
     if not isinstance(length, int):
         raise TypeError('Length must be an integer.')
@@ -129,7 +129,7 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     ValueError
         If the poles are not inside the unit disc.
     """
-    from util import check_poles,multiplicity, discretize_dc
+    from .util import check_poles,multiplicity, discretize_dc
     # Validate input parameters
     check_poles(mpoles)
 
@@ -189,7 +189,7 @@ def mlf_generate(length:int, poles:torch.Tensor, coeffs:torch.Tensor) -> torch.T
     ValueError
         If input parameters are incorrect or if poles are outside the valid range.
     """
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -244,8 +244,8 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
         If input parameters are incorrect or if poles are outside the valid range.
     """
 
-    from biort_sys import biort_system
-    from util import check_poles, conj_trans
+    from .biort_sys import biort_system
+    from .util import check_poles, conj_trans
     
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -279,7 +279,7 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     length : int
         Number of points in case of uniform sampling.
     poles : torch.Tensor, dtype=torch.complex64
-        Poles of the rational system (1-dimensional tensor). Must be inside the unit circle.
+        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
 
         Must have the same number of elements as 'coeffs'.
     coeffs : torch.Tensor, dtype=torch.complex64
@@ -308,7 +308,7 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
         If input parameters are invalid.
     """
     
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
@@ -365,9 +365,9 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
     ValueError
         If input parameters are invalid.
     """
-    from blaschke import arg_inv
-    from util import subsample, dotdc, check_poles
-    from biort_sys import biortdc_system
+    from .blaschke import arg_inv
+    from .util import subsample, dotdc, check_poles
+    from .biort_sys import biortdc_system
 
     # Validate input parameters
     if not isinstance(signal, torch.Tensor):
@@ -440,7 +440,7 @@ def mlfdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> t
         If input parameters are invalid.
     """
 
-    from util import check_poles
+    from .util import check_poles
     
     # Validate input parameters
     if not isinstance(length, int):
