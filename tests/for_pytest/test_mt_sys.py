@@ -132,3 +132,83 @@ def test_mtdc_coeffs():
         signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mtdc_coeffs(signal, mpoles, eps=0.)
+
+def test_mtdr_generate():
+    from .mt_sys import mtdr_generate
+
+    length = 5
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+    cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+    result = mtdr_generate(length, mpoles, cUk, cVk)
+    expected_result= torch.tensor([-1.223245,1.949876,25.660724,-19.231660,2.595392], dtype=torch.float32)
+    assert torch.allclose(result, expected_result)
+
+    #input validation
+    #length
+    with pytest.raises(TypeError, match="length must be an integer."):
+        length = 5.3
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    with pytest.raises(ValueError, match="length must be an integer greater than or equal to 2."):
+        length = 1
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    #mpoles is already tested with check_poles(mpoles) in mt_sys.py
+    #cUk
+    with pytest.raises(TypeError, match="cUk must be a torch.Tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = [1,2,3,4]
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    with pytest.raises(ValueError, match="cUk must be a 1-dimensional torch.Tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([[1,2,3,4], [1,2,3,4]], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    with pytest.raises(TypeError, match="cUk must be a float tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.int64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    #cVk
+    with pytest.raises(TypeError, match="cVk must be a torch.Tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = [-1,-2,-3,-4]
+        mtdr_generate(length, mpoles, cUk, cVk)
+    with pytest.raises(ValueError, match="cVk must be a 1-dimensional torch.Tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = torch.tensor([[-1,-2,-3,-4], [-1,-2,-3,-4]], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    with pytest.raises(TypeError, match="cVk must be a float tensor."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.int64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    
+    #length of mpoles not equal to length(cUk)-1
+    with pytest.raises(ValueError, match="mpoles must have 1 less element than cUk."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)
+    #length of mpoles not equal to length(cVk)-1
+    with pytest.raises(ValueError, match="mpoles must have 1 less element than cVk."):
+        length = 5
+        mpoles = torch.tensor([-0.5j, 0,0.5], dtype=torch.complex64)
+        cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
+        cVk = torch.tensor([-1,-2,-3,-4,-5], dtype=torch.float64)
+        mtdr_generate(length, mpoles, cUk, cVk)

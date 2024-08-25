@@ -132,27 +132,30 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
 def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.Tensor) -> torch.Tensor:
     """
     Generates a function in the space spanned by the discrete real MT system.
-    TODO: cUk and cVk: can they be complex? any constraints on them? (e.g. within unit circle?)
-    TODO: Also, looking at the matlab code, their lenght seems to be 1 more than mpoles. Is this correct?
-    So far, cUk = [0,1,2,3], cVk = [0,-i,-2i,-3i] ran without errors in matlab
+
     Parameters
     ----------
     length : int
         Number of points in case of uniform sampling.
+
     mpoles : torch.Tensor, dtype=torch.complex64
-        Poles of the discrete real MT system (row vector). Must be a 1-dimensional tensor.
-    cUk : torch.Tensor, dtype=??
-        Coefficients of the linear combination to form (row vector)
-        with respect to the real part of the discrete real MT system
-        defined by 'mpoles'.
-    cVk : torch.Tensor, dtype=??
-        Coefficients of the linear combination to form (row vector)
-        with respect to the imaginary part of the discrete real MT 
-        system defined by 'mpoles'.
+        Poles of the discrete real MT system (1-dimensional tensor). Must be inside the unit circle.
+        
+        Must have 1 less element than 'cUk' and 'cVk' separately.
+
+    cUk : torch.Tensor, dtype=torch.float64
+        Coefficients of the linear combination to form (1-dimensional tensor) with respect to the real part of the discrete real MT system defined by 'mpoles'.
+
+        Must have the same size as 'cVk1 and 1 more element than 'mpoles'.
+
+    cVk : torch.Tensor, dtype=torch.float64
+        Coefficients of the linear combination to form (1-dimensional tensor) with respect to the imaginary part of the discrete real MT system defined by 'mpoles'.
+
+        Must have the same size as 'cUk' and 1 more element than 'mpoles'.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float32
         The generated function at the uniform sampling points as a row vector.
 
         It is the linear combination of the discrete real MT system elements.
@@ -173,29 +176,62 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
         If 'mpoles' values are greater than or equal to 1.
     """
+    from .util import check_poles
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
+    if not isinstance(length, int):
+        raise TypeError("length must be an integer.")
+    if length < 2:
         raise ValueError("length must be an integer greater than or equal to 2.")
-    if not isinstance(mpoles, torch.Tensor) or mpoles.dim() != 1:
-        raise TypeError("mpoles must be a 1D torch.Tensor.")
-    if not isinstance(cUk, torch.Tensor) or cUk.dim() != 1 or cUk.size(0) != mpoles.size(0):
-        raise TypeError("cUk must be a 1D torch.Tensor with the same size as mpoles.")
-    if not isinstance(cVk, torch.Tensor) or cVk.dim() != 1 or cVk.size(0) != mpoles.size(0):
-        raise TypeError("cVk must be a 1D torch.Tensor with the same size as mpoles.")
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError("mpoles contains values greater than or equal to 1.")
+    
+    check_poles(mpoles)
 
-    # Prepend 0 to mpoles as per MATLAB code
+    if not isinstance(cUk, torch.Tensor):
+        raise TypeError("cUk must be a torch.Tensor.")
+    if cUk.ndim != 1:
+        raise ValueError("cUk must be a 1-dimensional torch.Tensor.")
+    if not cUk.is_floating_point():
+        raise TypeError("cUk must be a float tensor.")
+    
+    if not isinstance(cVk, torch.Tensor):
+        raise TypeError("cVk must be a torch.Tensor.")
+    if cVk.ndim != 1:
+        raise ValueError("cVk must be a 1-dimensional torch.Tensor.")
+    if not cVk.is_floating_point():
+        raise TypeError("cVk must be a float tensor.")
+    # Check the size of mpoles, cUk, and cVk
+    if mpoles.size(0) != cUk.size(0) - 1:
+        raise ValueError("mpoles must have 1 less element than cUk.")
+    if mpoles.size(0) != cVk.size(0) - 1:
+        raise ValueError("mpoles must have 1 less element than cVk.")
+    #if these two above conditions are satisfied, then cUk and cVk have the same size
+
+    # Prepend 0 to mpoles
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
 
     # Generate the MT system elements
     mts = mt_system(length, mpoles)
-
+    """ print(f"mts: {mts}")
+    print(f"mts.shape: {mts.shape}")
+    print(f"mts[0]: {mts[0]}")
+    print(f"mts[1]: {mts[1]}") """
     # Calculate the generated function
-    SRf = cUk[0] * mts[:, 0]
+    # since mpoles[0] = 0, the resulting mts[0] is just 1-s. NOTE: verify if this is correct mathematically
+    # that and the fact that cUk is float64, the type of SRf is guaranteed to be float64
+    SRf = cUk[0] * mts[0]
     for i in range(1, mpoles.size(0)):
-        SRf += 2 * cUk[i] * torch.real(mts[:, i]) + 2 * cVk[i] * torch.imag(mts[:, i])
-
+        """ print(f"i: {i}")
+        print(f"SRf: {SRf}")
+        print(f"cUk[i]: {cUk[i]}")
+        print(f"mts[i]: {mts[i]}")
+        print(f"cVk[i]: {cVk[i]}") """
+        #even these operations are guaranteed to keep the type of SRf float64
+        SRf += 2 * cUk[i] * torch.real(mts[i]) + 2 * cVk[i] * torch.imag(mts[i])
+    #convert SRf to float64 for type consistency
+    if SRf.imag.max() > 0:
+        print(f"Warning: SRf has non-zero imaginary part. SRf.imag: {SRf.imag}")
+    SRf = torch.real(SRf)
+    print(f"SRf: {SRf}")
+    print(f"SRf.dtype: {SRf.dtype}")
     return SRf
 
 
