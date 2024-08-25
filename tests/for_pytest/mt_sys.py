@@ -33,13 +33,13 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     check_poles(poles)
 
     # Calculate the MT system elements
-    np, mp = poles.size(0), len
-    mts = torch.zeros(mp, len, dtype=torch.complex64)
+    n=poles.size(0)
+    mts = torch.zeros(n, len, dtype=torch.complex64)
     t = torch.linspace(-torch.pi, torch.pi, len + 1)[:-1]
     z = torch.exp(1j * t)
 
     fi = torch.ones(len)  # The product defining MT elements so far
-    for j in range(mp):
+    for j in range(n):
         co = torch.sqrt(1 - (torch.abs(poles[j]) ** 2))
         rec = 1 / (1 - torch.conj(poles[j]) * z)
         lin = co * rec

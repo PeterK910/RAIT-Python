@@ -586,7 +586,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
     Convert the coefficients between the continuous systems base1 and base2.
-    TODO: specification of coeffs? dimension, dtype, etc.
+    NOTE: coeffs has to be the same length as poles
     Parameters
     ----------
     length : int
@@ -602,7 +602,7 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, 
         Converted coefficients with respect to the system 'base2'.
     
     Raises
@@ -629,13 +629,17 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     if not coeffs.is_complex():
         raise TypeError('coeffs must have complex elements.')
     
+    #coeffs has to be the same length as poles
+    if coeffs.size(0) != poles.size(0):
+        raise ValueError('coeffs must have the same length as poles.')
+    
     if not isinstance(base1, str):
-        raise TypeError('Base1 must be a string.')
+        raise TypeError('base1 must be a string.')
     if base1 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base1! Choose from lf, mlf, biort, mt.')
     
     if not isinstance(base2, str):
-        raise TypeError('Base2 must be a string.')
+        raise TypeError('base2 must be a string.')
     if base2 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base2! Choose from lf, mlf, biort, mt.')
     
@@ -655,12 +659,19 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     # Get systems for base1 and base2
     g1 = get_system(base1, length, poles)
     g2 = get_system(base2, length, poles)
+    #print(f"g1: {g1}")
+    #print(f"g2: {g2}")
 
-    F = g1 * torch.conj(g1)/length
-    G = g1 * torch.conj(g2)/length
-    #TODO: check matlab version to know coeffs shape
-    #co = G \ F * coeffs'; - matlab version
-    co = torch.conj(co)
+    F = torch.matmul(g1,conj_trans(g1)) / length
+    G = torch.matmul(g1,conj_trans(g2)) / length
+    
+    """ print(f"F: {F}")
+    print(f"G: {G}") """
+    co = torch.linalg.solve(G,F)
+    #print(f"G\\F: {co}")
+    co = torch.matmul(co, conj_trans(coeffs))
+    #print(f"G\\F*coeffs: {co}")
+    co = conj_trans(co)
     return co
 
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:

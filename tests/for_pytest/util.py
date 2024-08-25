@@ -534,9 +534,8 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 
 def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     """
-    TODO: check if interpolation without numpy is correct here
     Interpolate values between uniform sampling points using linear interpolation.
-
+    
     Parameters
     ----------
     sample : torch.Tensor, dtype=torch.complex64
@@ -584,15 +583,15 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
     Convert the coefficients between the continuous systems base1 and base2.
-
+    NOTE: coeffs has to be the same length as poles
     Parameters
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the continuous systems.
-    coeffs : torch.Tensor
-        Coefficients with respect to the continuous system 'base1'.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the continuous systems. Must be a 1D tensor. Must be inside the unit circle.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients with respect to the continuous system 'base1'. 1D tensor.
     base1 : str
         Type of the continuous system to be converted.
     base2 : str
@@ -600,7 +599,7 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, 
         Converted coefficients with respect to the system 'base2'.
     
     Raises
@@ -608,30 +607,36 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     ValueError
         If input parameters are invalid.
     """
-    from mt_sys import mt_system
-    from biort_sys import biort_system
-    from rat_sys import lf_system, mlf_system
+    from .mt_sys import mt_system
+    from .biort_sys import biort_system
+    from .rat_sys import lf_system, mlf_system
 
     # Validate input parameters
-    if poles.size(0) != 1:
-        raise ValueError("poles must be a 1D tensor")
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
     if length < 2:
-        raise ValueError("length must be an integer greater than or equal to 2.")
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+        raise ValueError('length must be an integer greater than or equal to 2.')
     
-    if coeffs.size(0) != 1:
-        raise ValueError('Coeffs should be row vector!')
+    check_poles(poles)
+
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must have complex elements.')
+    
+    #coeffs has to be the same length as poles
+    if coeffs.size(0) != poles.size(0):
+        raise ValueError('coeffs must have the same length as poles.')
     
     if not isinstance(base1, str):
-        raise TypeError('Base1 must be a string.')
-    
-    if not isinstance(base2, str):
-        raise TypeError('Base2 must be a string.')
-    
+        raise TypeError('base1 must be a string.')
     if base1 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base1! Choose from lf, mlf, biort, mt.')
     
+    if not isinstance(base2, str):
+        raise TypeError('base2 must be a string.')
     if base2 not in ['lf', 'mlf', 'biort', 'mt']:
         raise ValueError('Invalid system type for base2! Choose from lf, mlf, biort, mt.')
     
@@ -651,14 +656,19 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     # Get systems for base1 and base2
     g1 = get_system(base1, length, poles)
     g2 = get_system(base2, length, poles)
-    #TODO: check if the lines below are correct
-    # Perform matrix operations
-    F = g1.mm(g1.t()) / length
-    G = g1.mm(g2.t()) / length
+    #print(f"g1: {g1}")
+    #print(f"g2: {g2}")
+
+    F = torch.matmul(g1,conj_trans(g1)) / length
+    G = torch.matmul(g1,conj_trans(g2)) / length
     
-    # Solve linear system and return converted coefficients
-    co = torch.linalg.solve(G, F.mm(coeffs.t())).t()
-    
+    """ print(f"F: {F}")
+    print(f"G: {G}") """
+    co = torch.linalg.solve(G,F)
+    #print(f"G\\F: {co}")
+    co = torch.matmul(co, conj_trans(coeffs))
+    #print(f"G\\F*coeffs: {co}")
+    co = conj_trans(co)
     return co
 
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:

@@ -308,3 +308,102 @@ def test_dotdr():
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         t = torch.tensor([1, 2, 3], dtype=torch.float32)
         dotdr(F, G, poles, t)
+
+def test_coeff_conv():
+    from .util import coeff_conv
+    #lf to biort
+    length=5
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+    base1='lf'
+    base2='biort'
+    result = coeff_conv(length, poles, coeffs, base1, base2)
+    expected_result = torch.tensor([5.047004-1.681930j,4.600615-1.787050j,4.447637-1.770824j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+    #mt to mlf
+    length=5
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+    base1='mt'
+    base2='mlf'
+    result = coeff_conv(length, poles, coeffs, base1, base2)
+    expected_result = torch.tensor([5.196152+-0.401924j,-6.928203+4.000000j,4.330127+-2.598076j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+
+    #input validation
+    #length
+    with pytest.raises(TypeError, match="length must be an integer."):
+        length=5.3
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="length must be an integer greater than or equal to 2."):
+        length=1
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    #poles is already tested with check_poles(poles) in util.py, so done here
+    #coeffs
+    with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = [3, 2, -2j]
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([[3, 2, -2j], [3, 2, -2j]])
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    with pytest.raises(TypeError, match="coeffs must have complex elements."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, 3], dtype=torch.float64)
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    #coeffs and poles have different lengths
+    with pytest.raises(ValueError, match="coeffs must have the same length as poles."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2], dtype=torch.complex64)
+        base1='lf'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    #base1
+    with pytest.raises(TypeError, match="base1 must be a string."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1=3
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="Invalid system type for base1! Choose from lf, mlf, biort, mt."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='lf1'
+        base2='biort'
+        coeff_conv(length, poles, coeffs, base1, base2)
+    #base2
+    with pytest.raises(TypeError, match="base2 must be a string."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='lf'
+        base2=3
+        coeff_conv(length, poles, coeffs, base1, base2)
+    with pytest.raises(ValueError, match="Invalid system type for base2! Choose from lf, mlf, biort, mt."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([3, 2, -2j], dtype=torch.complex64)
+        base1='lf'
+        base2='biort1'
+        coeff_conv(length, poles, coeffs, base1, base2)
