@@ -117,21 +117,14 @@ def __mt(n:int, mpoles:torch.Tensor, z:torch.Tensor) -> torch.Tensor:
     r = torch.ones_like(z)
     for k in range(n):
         r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
-    """ print(f"MT: r1= {r}")
-    upper = torch.sqrt(1 - torch.abs(mpoles[n])**2)
-    lower = 1 - torch.conj(mpoles[n]) * z
-    print(f"MT: upper= {upper}")
-    print(f"MT: lower= {lower}") """
     r *= torch.sqrt(1 - torch.abs(mpoles[n])**2) / (1 - torch.conj(mpoles[n]) * z)
-    """ print(f"MT: n= {n}")
-    print(f"MT: mpoles= {mpoles}")
-    print(f"MT: z= {z}")
-    print(f"MT: r2= {r}") """
     return r
 
 def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.Tensor) -> torch.Tensor:
     """
     Generates a function in the space spanned by the discrete real MT system.
+
+    NOTE: Prints a warning if the imaginary part of the generated function is non-zero.
 
     Parameters
     ----------
@@ -210,28 +203,19 @@ def mtdr_generate(length:int, mpoles:torch.Tensor, cUk:torch.Tensor, cVk:torch.T
 
     # Generate the MT system elements
     mts = mt_system(length, mpoles)
-    """ print(f"mts: {mts}")
-    print(f"mts.shape: {mts.shape}")
-    print(f"mts[0]: {mts[0]}")
-    print(f"mts[1]: {mts[1]}") """
     # Calculate the generated function
-    # since mpoles[0] = 0, the resulting mts[0] is just 1-s. NOTE: verify if this is correct mathematically
+    # since mpoles[0] = 0, the resulting mts[0] is just 1-s. TODO: verify if this is correct mathematically
     # that and the fact that cUk is float64, the type of SRf is guaranteed to be float64
     SRf = cUk[0] * mts[0]
     for i in range(1, mpoles.size(0)):
-        """ print(f"i: {i}")
-        print(f"SRf: {SRf}")
-        print(f"cUk[i]: {cUk[i]}")
-        print(f"mts[i]: {mts[i]}")
-        print(f"cVk[i]: {cVk[i]}") """
         #even these operations are guaranteed to keep the type of SRf float64
         SRf += 2 * cUk[i] * torch.real(mts[i]) + 2 * cVk[i] * torch.imag(mts[i])
     #convert SRf to float64 for type consistency
+    
+    #in case the above operations did not guarantee the type of SRf to be float64
     if SRf.imag.max() > 0:
         print(f"Warning: SRf has non-zero imaginary part. SRf.imag: {SRf.imag}")
     SRf = torch.real(SRf)
-    print(f"SRf: {SRf}")
-    print(f"SRf.dtype: {SRf.dtype}")
     return SRf
 
 
@@ -272,10 +256,6 @@ def mtdr_system(poles: torch.Tensor, eps:float=1e-6) -> tuple[torch.Tensor, torc
     t = discretize_dr(poles, eps)
     mts_re = torch.zeros(m, t.size(0), dtype=torch.float64)
     mts_im = torch.zeros(m, t.size(0), dtype=torch.float64)
-    """ print(f"mpoles: {mpoles}")
-    print(f"t: {t}")
-    print(f"mts_re: {mts_re}")
-    print(f"mts_im: {mts_im}") """
     for j in range(m):
         mt_values = __mt(j, mpoles, torch.exp(1j * t))
         mts_re[j, :] = mt_values.real
@@ -460,7 +440,7 @@ def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> to
     """
     Generates a function in the space spanned by the discrete complex MT system.
 
-    NOTE: The function uses mt_system() instead of mtdc_system() to generate the MT system elements. Verify if this is intended.
+    TODO: The function uses mt_system() instead of mtdc_system() to generate the MT system elements. Verify if this is intended.
     Parameters
     ----------
     length : int
@@ -524,9 +504,9 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     """
     Calculates the mtdr-coefficients of 'v' with respect to the discrete real MT system given by 'mpoles'.
 
-    NOTE: verify if v should be complex or real. Right now, it is real as per test.m from matlab code.
+    TODO: verify if v should be complex or real. Right now, it is real as per test.m from matlab code.
 
-    NOTE: verify if output cUk and cVk should be complex or real. Right now, they are real as per test.m from matlab code.
+    TODO: verify if output cUk and cVk should be complex or real. Right now, they are real as per test.m from matlab code.
     
     Parameters
     ----------
@@ -585,18 +565,12 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     mts_im = mts_im.to(torch.complex64)
 
     for i in range(m):
-        #print(f"i: {i}")
-        #print(f"mts_re[i]: {mts_re[i]}")
-        #print(f"mts_re[i].dtype: {mts_re[i].dtype}")
         #warning is thrown here because of the complex64 type of mts_re[i] and samples
-        #whereas cUk is float64. See note above.
+        #whereas cUk is float64. See todo above.
         cUk[i] = dotdr(samples, mts_re[i], mpoles, t)
-        #print(f"mts_im[i]: {mts_im[i]}")
-        #print(f"mts_im[i].dtype: {mts_im[i].dtype}")
         cVk[i] = dotdr(samples, mts_im[i], mpoles, t)
 
     SRf = mtdr_generate(len(v), mpoles, cUk, cVk)
-    
     err = torch.linalg.norm(SRf - v).item()
 
     return cUk, cVk, err

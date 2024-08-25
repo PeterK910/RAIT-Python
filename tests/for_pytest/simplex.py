@@ -21,8 +21,8 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
     """
     if not isinstance(k, torch.Tensor):
         raise TypeError("Input k must be a torch.Tensor")
-    if k.dtype != torch.float64:
-        raise TypeError("Input k must be a tensor of dtype float64")
+    if not k.is_floating_point():
+        raise TypeError("Input k must be a float tensor")
     if k.dim() != 1 or k.size(0) % 2 != 0:
         raise ValueError("Input k must be a 1D row vector with an even number of elements")
 
@@ -43,7 +43,6 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
 def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     """
     Maps coordinates in R^2 to parameters in ID.
-    TODO: should every row contain the same number of elements?
     Parameters
     ----------
     k : torch.Tensor, dtype=float64
@@ -65,8 +64,8 @@ def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     # Validate input parameters
     if not isinstance(k, torch.Tensor):
         raise TypeError('k must be a torch.Tensor.')
-    if k.dtype != torch.float64:
-        raise TypeError('k must be a tensor of dtype float64.')
+    if not k.is_floating_point():
+        raise TypeError('k must be a float tensor.')
     if k.ndim != 2 or k.size(1) % 2 != 0:
         raise ValueError('k must be a 2D tensor with an even number of columns.')
 
@@ -143,12 +142,14 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
 
 def periodize_poles(p: torch.Tensor, m: int) -> torch.Tensor:
     """
+    NOTE: This function is unnecessary in python, as torch.repeat already exists. It is kept for compatibility with the original code.
+
     Duplicates periodically the elements of 'p' 'm' times.
 
     Parameters
     ----------
     p : torch.Tensor
-        A row vector that contains the poles.
+        A 1-dimensional tensor that contains the poles.
     m : int
         Integer factor of duplication.
 
@@ -167,8 +168,8 @@ def periodize_poles(p: torch.Tensor, m: int) -> torch.Tensor:
     if not isinstance(p, torch.Tensor) or p.ndim != 1:
         raise ValueError('p must be a 1-dimensional torch.Tensor.')
     
-    if not isinstance(m, int) or m < 1:
-        raise ValueError('m must be a positive integer.')
+    if not isinstance(m, int) or m < 0:
+        raise ValueError('m must be a non-negative integer.')
 
     # Duplicate the poles 'm' times
     pp = p.repeat(m)

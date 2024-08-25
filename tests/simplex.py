@@ -21,8 +21,8 @@ def coords2params(k: torch.Tensor) -> torch.Tensor:
     """
     if not isinstance(k, torch.Tensor):
         raise TypeError("Input k must be a torch.Tensor")
-    if k.dtype != torch.float64:
-        raise TypeError("Input k must be a tensor of dtype float64")
+    if not k.is_floating_point():
+        raise TypeError("Input k must be a float tensor")
     if k.dim() != 1 or k.size(0) % 2 != 0:
         raise ValueError("Input k must be a 1D row vector with an even number of elements")
 
@@ -64,8 +64,8 @@ def coords2params_all(k: torch.Tensor) -> torch.Tensor:
     # Validate input parameters
     if not isinstance(k, torch.Tensor):
         raise TypeError('k must be a torch.Tensor.')
-    if k.dtype != torch.float64:
-        raise TypeError('k must be a tensor of dtype float64.')
+    if not k.is_floating_point():
+        raise TypeError('k must be a float tensor.')
     if k.ndim != 2 or k.size(1) % 2 != 0:
         raise ValueError('k must be a 2D tensor with an even number of columns.')
 

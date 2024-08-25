@@ -83,8 +83,6 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-
-
     # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
     vif = __mt_arrange(vf)
@@ -248,13 +246,10 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
         raise ValueError("Poles must be inside the unit disc")
 
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
-    #print(f"mpoles: {mpoles}")
     m = mpoles.size(0)
-    #print(f"m: {m}")
     stepnum = 2*(m-1) + 1
     #array of numbers ranging from -(m-1)*pi to (m-1)*pi, with pi as distance between each number
     z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=stepnum, dtype=torch.float64)
-    #print(f"z: {z}")
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t
@@ -262,7 +257,8 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
-    NOTE: F and G are expected to have the same number of elements, AND at least 2.
+    TODO: F and G are expected to have the same number of elements, AND at least 2.
+
     Parameters
     ----------
     F : torch.Tensor, dtype=torch.complex64
@@ -326,7 +322,8 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes discrete real dot product of two functions in H^2(ID).
-    NOTE: F and G AND t are expected to have the same number of elements
+    TODO: F and G AND t are expected to have the same number of elements
+
     Parameters
     ----------
     F : torch.Tensor, dtype=torch.complex64
@@ -543,8 +540,9 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     ----------
     sample : torch.Tensor, dtype=torch.complex64
         A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
-        NOTE: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not withing [-pi, pi)
-        Despite this, it is used as an input to this function.
+        
+        TODO: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not within [-pi, pi)
+        Despite this, it is still used as an input to this function.
     x : torch.Tensor, dtype=torch.float64
         The values at which interpolation is to be computed. 1D tensor.
 
@@ -588,6 +586,7 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     """
     Convert the coefficients between the continuous systems base1 and base2.
     NOTE: coeffs has to be the same length as poles
+
     Parameters
     ----------
     length : int
@@ -660,18 +659,12 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     # Get systems for base1 and base2
     g1 = get_system(base1, length, poles)
     g2 = get_system(base2, length, poles)
-    #print(f"g1: {g1}")
-    #print(f"g2: {g2}")
 
     F = torch.matmul(g1,conj_trans(g1)) / length
     G = torch.matmul(g1,conj_trans(g2)) / length
     
-    """ print(f"F: {F}")
-    print(f"G: {G}") """
     co = torch.linalg.solve(G,F)
-    #print(f"G\\F: {co}")
     co = torch.matmul(co, conj_trans(coeffs))
-    #print(f"G\\F*coeffs: {co}")
     co = conj_trans(co)
     return co
 
@@ -752,20 +745,17 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     # Convert coefficients between systems
     F = g1 @ conj_trans(g1) / coeffs.size(0)
     G = g1 @ conj_trans(g2) / coeffs.size(0)
-    print(f"g1: {g1}")
-    print(f"g2: {g2}")
-    print(f"F: {F}")
-    print(f"G: {G}")
+
     co = torch.linalg.solve(G, F)
-    print(f"G\\F: {co}")
     co = co @ conj_trans(coeffs)
-    print(f"G\\F*coeffs': {co}")
     co = conj_trans(co)
 
     return co
 
 def periodize(v: torch.Tensor, alpha: float, draw: bool = False) -> torch.Tensor:
     """
+    NOTE: This function is untested and may not work as intended.
+
     Calculates the periodized extension of a signal.
 
     Parameters
@@ -957,6 +947,8 @@ def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.
 
 def rshow(*args):
     """
+    NOTE: This function is untested and may not work as intended.
+
     Visualizes the given function, system, or systems.
 
     Usage:

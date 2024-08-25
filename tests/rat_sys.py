@@ -79,17 +79,10 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
     lfs = torch.zeros(poles.numel(), length, dtype=torch.complex64) # complex dtype
     t = torch.linspace(-torch.pi, torch.pi, length + 1)[:-1]
     z = torch.exp(1j * t)
-    """ print(f"lfs: {lfs}")
-    print(f"t: {t}")
-    print(f"z: {z}") """
     for j in range(poles.numel()):
-        #print(f"j: {j}")
         rec = 1 / (1 - poles[j].conj() * z)
-        #print(f"rec: {rec}")
         lfs[j, :] = rec ** __multiplicity_local(j, poles)
-        #print(f"lfs[j, :]: {lfs[j, :]}")
         lfs[j, :] /= torch.sqrt(torch.dot(lfs[j, :], lfs[j, :].conj()) / length)
-        #print(f"lfs[j, :]: {lfs[j, :]}")
     return lfs
 
 def __multiplicity_local(n:int, v:torch.Tensor) -> int:
@@ -108,15 +101,10 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
     int
         The multiplicity of the nth element.
     """
-    #print(f"__multiplicity_local: checking multiplicity of {n}-th element within {v}")
     m = 0
-    #print(f"__multiplicity_local: k will range from 0 to {n}")
     for k in range(n+1):
-        #print(f"__multiplicity_local: comparing {v[n]} with {v[k]}")
         if torch.allclose(v[n], v[k]):
             m += 1
-            #print(f"__multiplicity_local: found match at {k}-th element")
-    #print(f"__multiplicity_local: returning multiplicity of v[{n}] ({v[n]}) : {m}")
     return m
 
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
@@ -159,8 +147,7 @@ def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     for j in range(len(multi)):
         for k in range(multi[j]):
             col = sum(multi[:j]) + k
-            #print(f"j: {j}, k: {k}, col: {col}")
-            #compared to matlab version, since k is 0-based here, any k used in exponentiation 1 higher than in matlab 
+            #compared to matlab version, since k is 0-based here, any k used in exponentiation is increased by 1 here
             mlf[col, :] = torch.exp(1j * t) ** k / (1 - spoles[j].conj() * torch.exp(1j * t)) ** (k+1)
 
     return mlf
@@ -403,27 +390,17 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
     z = torch.linspace(-torch.pi, torch.pi - eps/1000, m + 1, dtype=torch.float64)
     t = arg_inv(mpoles, z, eps)
     samples = subsample(signal, t)
-    #print(f"m:{m}")
-    #print(f"z:{z}")
-    #print(f"t:{t}")
-    #print(f"samples:{samples}")
     
     co = torch.zeros(m, dtype=torch.complex64)
     bts = biortdc_system(mpoles, eps)
-    #print(f"co:{co}")
-    #print(f"bts:{bts}")
 
     for i in range(m):
         co[i] = dotdc(samples, bts[i], mpoles, t)
-    #print(f"co:{co}")
     # Calculate error
     len_signal = signal.numel()
     mlf = mlf_system(len_signal, mpoles)
-    #print(f"len_signal:{len_signal}")
-    #print(f"mlf:{mlf}")
     
     err = torch.linalg.norm(torch.matmul(co, mlf) - signal).item()
-    #print(f"err:{err}")
 
     return co, err
 
@@ -431,7 +408,7 @@ def mlfdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> t
     """
     Generates a function in the space spanned by the discrete modified basic rational function system.
 
-    NOTE: The function uses mlf_system() instead of mlfdc_system() to generate the modified basic rational function system elements. Verify if this is intended.
+    TODO: The function uses mlf_system() instead of mlfdc_system() to generate the modified basic rational function system elements. Verify if this is intended.
 
     Parameters
     ----------

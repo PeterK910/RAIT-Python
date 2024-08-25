@@ -77,7 +77,6 @@ def __pszi(l:int, j:int, poles:torch.Tensor, multi:torch.Tensor, z:torch.Tensor)
     torch.Tensor
         The calculated values of the biorthogonal polynomial.
     """
-    #print(f"calling __pszi with l = {l}, j = {j}, poles = {poles}, multi = {multi}, z = {z}")
     n = len(poles)
     v = torch.zeros(z.size(), dtype=torch.complex64)
     do = __domega(int(multi[l]) - j, l, poles, multi, poles[l])
@@ -290,12 +289,6 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
     
     err = torch.linalg.norm(co @ bts - v).item()
-    """
-    print(f"mlfs = {mlfs}")
-    print(f"bts = {bts}")
-    print(f"co = {co}")
-    print(f"err = {err}")
-    """
     return co, err
 
 def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
@@ -366,7 +359,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     """
     Generates a function in the space spanned by the discrete biorthogonal system.
 
-    NOTE: The function uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
+    TODO: The function uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
 
     Parameters
     ----------

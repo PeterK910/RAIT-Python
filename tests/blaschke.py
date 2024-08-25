@@ -29,7 +29,7 @@ def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if not isinstance(a, torch.Tensor):
         raise TypeError('"a" must be a torch.Tensor.')
     
-    if a.dtype != torch.complex64:
+    if not a.is_complex():
         raise TypeError('"a" must be a complex torch.Tensor.')
     
     if a.ndim != 1:
@@ -42,8 +42,8 @@ def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
     
-    if t.dtype != torch.float64:
-        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+    if not t.is_floating_point():
+        raise TypeError('"t" must be a float torch.Tensor.')
 
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
@@ -110,7 +110,7 @@ def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
     ----------
     len : int
         Number of points for uniform sampling.
-    TODO: is len=1 allowed?
+
     poles : torch.Tensor, dtype=torch.complex64
         Parameters of the Blaschke product. Must be a 1-dimensional torch.Tensor.
 
@@ -144,6 +144,8 @@ def blaschkes(len: int, poles: torch.Tensor) -> torch.Tensor:
 
 def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
+    NOTE: This function is not tested yet.
+
     Transforms an image by applying the Blaschke function defined by poles 'a'.
 
     Parameters
@@ -220,7 +222,7 @@ def blaschkes_img(path: str, a: complex, show: bool) -> tuple[torch.Tensor, torc
 
     return B_abs, B_arg, B
 
-def arg_fun(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
+def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Calculate the values of the argument function of a Blaschke product.
 
@@ -249,7 +251,7 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tenso
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
     
-    if t.dtype != torch.float64:
+    if not t.is_floating_point:
         raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
 
     if t.ndim != 1:
@@ -258,33 +260,20 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tenso
     # Calculate the argument function values
     b = torch.zeros(len(t), dtype=torch.float64)
     for i in range(len(a)):
-        b += __arg_fun_one(a[i], t, debug)
-        if debug:
-            print(f"b = {b}, dtype = {b.dtype}")
-    if debug:
-        print(f"b before division = {b}")
+        b += __arg_fun_one(a[i], t)
     b /= len(a)
-    if debug:
-        print(f"b after division = {b}")
     return b
 
-def __arg_fun_one(a: torch.Tensor, t: torch.Tensor, debug:bool = False) -> torch.Tensor:
+def __arg_fun_one(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     r = torch.abs(a)
     fi = torch.angle(a)
     mu = (1 + r) / (1 - r)
     
     gamma = 2 * torch.atan((1 / mu) * torch.tan(fi / 2))
-    if debug:
-        print(f"r = {r},fi={fi},mu = {mu},gamma = {gamma}")
-    
 
     b = 2 * torch.atan(mu * torch.tan((t - fi) / 2)) + gamma
-    if debug:
-        print(f"b1 = {b}, type = {b.dtype}")
     #don't ever use fmod again, it's not working as expected
     b = (b + torch.pi) % (2 * torch.pi) - torch.pi  # move it in [-pi, pi)
-    if debug:
-        print(f"b2 = {b}, type = {b.dtype}")
     return b
 
 def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -313,8 +302,8 @@ def argdr_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
     
-    if t.dtype != torch.float64:
-        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+    if not t.is_floating_point():
+        raise TypeError('"t" must be a float torch.Tensor.')
 
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
@@ -363,8 +352,8 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
     
     if not isinstance(b, torch.Tensor):
         raise TypeError('"b" must be a torch.Tensor.')
-    if b.dtype != torch.float64:
-        raise TypeError('"b" must be a torch.Tensor with float64 dtype.')
+    if not b.is_floating_point():
+        raise TypeError('"b" must be a float torch.Tensor.')
     if b.ndim != 1:
         raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
     if b.min() < -torch.pi or b.max() >= torch.pi:
@@ -439,8 +428,6 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
     """ print("arg_inv_all") """
-    #torch.set_printoptions(precision=6)
-
     from util import bisection_order
 
     # Validate input parameters
@@ -470,11 +457,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         else:
             v1 = x[s[i, 1]]
             v2 = x[s[i, 2]]
-            """ print(f"i = {i}")
-            print(f"x = {x}")
-            print(f"s = {s}")
-            print(f"v1 = x[s[{i},1]] = {v1}, v2 = x[s[{i},2]] = {v2}") """
-
+            
             #convert v1 and v2 to a format that argdr_fun can accept
             v1 = torch.tensor([v1], dtype=torch.float64)
             v2 = torch.tensor([v2], dtype=torch.float64)
@@ -483,13 +466,6 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
 
             #unwrapping the result
             fv1, fv2 = fv1[0], fv2[0]
-        #i=0 ok
-        if i > 0:
-            """ print(f"i = {i}")
-            print(f"b = {b}")
-            print(f"s = {s}")
-            print(f"ba for this round (b[s[{i},0]]): {b[s[i, 0]]}") """
-            #debug=True
 
         ba = b[s[i, 0]]
         if fv1 == ba:
@@ -503,62 +479,24 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
 
             #convert xa to a format that argdr_fun can accept
             xa = torch.tensor([xa], dtype=torch.float64)
-            if i > 0:
-               """  print(f"before while loop, calling arg_fun with a={a} \n and xa = {xa} = (v1 + v2) / 2 = \n ({v1} + {v2}) / 2") """
-            if(debug):
-                fvk = arg_fun(a, xa, debug)
-            else:
-                fvk = arg_fun(a, xa)
-            #fvk = arg_fun(a, xa)
-            #unwrapping the result
+            fvk = arg_fun(a, xa)
             fvk = fvk[0]
-            
-            """ print(f"before while loop, fvk = {fvk}, ba = {ba}")
-            print(f"while loop starts") """
-            #j = 0
-            error_count = 0
             while torch.abs(fvk - ba) > epsi:
-                #j+=1
-                """ print(f"fvk = {fvk}, ba = {ba}") """
                 if fvk == ba:
-                    """ print(f"exact match for fvk and ba, x[s[{i},0]] = {xa}") """
                     x[s[i, 0]] = xa
                     return x
                 elif fvk < ba:
-                    """ print(f"fvk < ba, v1 = xa") """
                     v1 = xa
                 else:
-                    """ print(f"fvk > ba, v2 = xa") """
                     v2 = xa
-                """ print(f"v1 = {v1}, v2 = {v2}")
-                if v1 > v2:
-                    raise ValueError(f"v1 > v2 violates invariant, v1 = {v1}, v2 = {v2}") """
                 xa = (v1 + v2) / 2
-                """ print(f"xa before arg_fun = {xa}") """
 
                 #convert xa to a format that argdr_fun can accept
                 xa = torch.tensor([xa], dtype=torch.float64)
-                """ print(f"calling arg_fun with a={a}, xa = {xa}") """
-                tmpfvk = fvk
-                if(debug):
-                    fvk = arg_fun(a, xa, debug)
-                else:
-                    fvk = arg_fun(a, xa)
-                #fvk = arg_fun(a, xa)
+                fvk = arg_fun(a, xa)
 
                 #unwrapping the result
                 fvk = fvk[0]
-
-                """ print(f"fvk after arg_fun = {fvk}, before, it was {tmpfvk}") """
-                """ old_dif = torch.abs(tmpfvk - ba)
-                new_dif = torch.abs(fvk - ba)
-                if new_dif > old_dif:
-                    error_count += 1
-                    print(f"ALERT! new difference is greater than old difference, old = {old_dif}, new = {new_dif}")
-                    if(error_count > 10):
-                        raise ValueError(f"new difference is greater than old difference, old = {old_dif}, new = {new_dif}") """
-
-            """ print(f"loop ends after {j} iterations, error count = {error_count}") """
             x[s[i, 0]] = xa
     #drop the last element
     return x[:n]
@@ -593,8 +531,8 @@ def argdr_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Ten
 
     if not isinstance(b, torch.Tensor):
         raise TypeError('"b" must be a torch.Tensor.')
-    if b.dtype != torch.float64:
-        raise TypeError('"b" must be a torch.Tensor with float64 dtype.')
+    if not b.is_floating_point():
+        raise TypeError('"b" must be a float torch.Tensor.')
     if b.ndim != 1:
         raise ValueError('"b" must be a 1-dimensional torch.Tensor.')
     if b.min() < -torch.pi or b.max() >= torch.pi:
@@ -716,6 +654,8 @@ def __argdr_inv_all(a:torch.Tensor, b:torch.Tensor, epsi:float)->torch.Tensor:
 
 def arg_inv_anim(a: torch.Tensor, n: int) -> None:
     """
+    NOTE: This function is not tested yet.
+
     Shows an animation related to the inverse of an equidistant discretization
     by an argument function.
 
