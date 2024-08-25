@@ -292,7 +292,7 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     length : int
         Number of points in case of uniform sampling.
     poles : torch.Tensor, dtype=torch.complex64
-        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
+        Poles of the rational system (1-dimensional tensor). Must be inside the unit circle.
 
         Must have the same number of elements as 'coeffs'.
     coeffs : torch.Tensor, dtype=torch.complex64

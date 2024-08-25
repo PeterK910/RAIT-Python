@@ -366,6 +366,8 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     """
     Generates a function in the space spanned by the discrete biorthogonal system.
 
+    NOTE: The function still uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
+
     Parameters
     ----------
     length : int
@@ -377,7 +379,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a 1-dimensional tensor.
 
         It is the linear combination of the discrete biorthogonal system elements.
@@ -396,24 +398,26 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
         If input parameters are invalid.
     """
 
+    from .util import check_poles
+    
     # Validate input parameters
     if not isinstance(length, int):
         raise TypeError('length must be an integer.')
     if length < 2:
-        raise ValueError('length must be at least 2.')
-
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
         raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
     
-    if mpoles.shape[0] != coeffs.shape[0]:
-        raise ValueError('mpoles and coeffs must have the same number of elements.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
+    #coeffs must have the same number of elements as poles
+    if mpoles.size(0) != coeffs.size(0):
+        raise ValueError('poles and coeffs must have the same number of elements.')
 
     # Calculate the biorthogonal system elements
     bts = biort_system(length, mpoles)
