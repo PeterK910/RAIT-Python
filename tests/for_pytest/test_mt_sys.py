@@ -97,3 +97,38 @@ def test_mt_coeffs():
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mt_coeffs(v, poles)
     #poles is already tested with check_poles(poles) in mt_sys.py
+
+def test_mtdc_coeffs():
+    from .mt_sys import mtdc_coeffs
+    signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    co,err = mtdc_coeffs(signal, poles)
+    err = torch.tensor(err)
+    expected_co = torch.tensor([-0.300508+1.000102j,0.703239+-0.428161j,-0.592564+0.317047j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.080572)
+    assert torch.allclose(co, expected_co)
+    assert torch.allclose(err, expected_err)
+
+    #input validation
+    with pytest.raises(TypeError, match="signal must be a torch.Tensor."):
+        signal = [2j, 0, -2]
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdc_coeffs(signal, mpoles)
+    with pytest.raises(ValueError, match="signal must be a 1-dimensional torch.Tensor."):
+        signal = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdc_coeffs(signal, mpoles)
+    with pytest.raises(TypeError, match="signal must be a complex tensor."):
+        signal = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdc_coeffs(signal, mpoles)
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdc_coeffs(signal, mpoles, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdc_coeffs(signal, mpoles, eps=0.)

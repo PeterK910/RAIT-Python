@@ -21,7 +21,7 @@ def mt_system(len: int, poles: torch.Tensor) -> torch.Tensor:
     ValueError
         If input parameters are invalid.
     """
-    from .util import check_poles
+    from util import check_poles
 
     # Validate input parameters
     if not isinstance(len, int):
@@ -359,16 +359,16 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
 
     Parameters
     ----------
-    signal : torch.Tensor
-        An arbitrary vector.
-    mpoles : torch.Tensor
-        Poles of the discrete complex MT system.
-    eps : float
+    signal : torch.Tensor, dtype=torch.complex64
+        An arbitrary 1-dimensional tensor.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete complex MT system. 1-dimensional tensor. Must be inside the unit circle.
+    eps : float, optional
         Accuracy of the complex discretization on the unit disc.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of 'signal' with respect to the discrete 
         complex MT system defined by 'mpoles'.
     float
@@ -379,20 +379,22 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
     ValueError
         If input parameters are invalid.
     """
-    from util import subsample, dotdc, discretize_dc
+    from util import subsample, dotdc, discretize_dc, check_poles
 
     # Validate input parameters
-    if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
+    if not isinstance(signal, torch.Tensor):
+        raise TypeError('signal must be a torch.Tensor.')
+    if signal.ndim != 1:
         raise ValueError('signal must be a 1-dimensional torch.Tensor.')
+    if not signal.is_complex():
+        raise TypeError('signal must be a complex tensor.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
+    check_poles(mpoles)
     
     if not isinstance(eps, float):
-        raise ValueError('eps must be a float.')
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Discretize and sample
     t = discretize_dc(mpoles, eps)
@@ -400,18 +402,18 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
 
     # Calculate coefficients using helper functions assumed to be implemented correctly
     m = len(mpoles)
-    co = torch.zeros(1, m)
+    co = torch.zeros(m, dtype=torch.complex64)
     mts = mtdc_system(mpoles, eps)
 
     for i in range(m):
-        co[0, i] = dotdc(samples, mts[i], mpoles, t)
+        co[i] = dotdc(samples, mts[i], mpoles, t)
 
     # Calculate error
     len_signal = len(signal)
     mts = mt_system(len_signal, mpoles)
     err = torch.linalg.norm(co @ mts - signal).item()
 
-    return co.squeeze(), err
+    return co, err
 
 def mtdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
     """
