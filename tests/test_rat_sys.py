@@ -3,7 +3,7 @@ import pytest
 import re 
 
 def test_mlf_system():
-    from .rat_sys import mlf_system
+    from rait.rat_sys import mlf_system
     len=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
@@ -23,7 +23,7 @@ def test_mlf_system():
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
 
 def test_lf_system():
-    from .rat_sys import lf_system
+    from rait.rat_sys import lf_system
     len=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
@@ -43,7 +43,7 @@ def test_lf_system():
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
 
 def test_mlfdc_system():
-    from .rat_sys import mlfdc_system
+    from rait.rat_sys import mlfdc_system
     
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
@@ -66,7 +66,7 @@ def test_mlfdc_system():
         mlfdc_system(mpoles, eps=-1.)
 
 def test_mlf_coeffs():
-    from .rat_sys import mlf_coeffs
+    from rait.rat_sys import mlf_coeffs
     v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor([-1.060232-0.164866j,0.697041-0.375806j,-0.303476+1.207338j], dtype=torch.complex64)
@@ -91,7 +91,7 @@ def test_mlf_coeffs():
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
     
 def test_mlfdc_coeffs():
-    from .rat_sys import mlfdc_coeffs
+    from rait.rat_sys import mlfdc_coeffs
     signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     co,err = mlfdc_coeffs(signal, mpoles)
@@ -126,7 +126,7 @@ def test_mlfdc_coeffs():
         mlfdc_coeffs(signal, mpoles, eps=0.)
 
 def test_mlf_generate():
-    from .rat_sys import mlf_generate
+    from rait.rat_sys import mlf_generate
 
     length=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -172,7 +172,7 @@ def test_mlf_generate():
         mlf_generate(length, poles, coeffs)
 
 def test_lf_generate():
-    from .rat_sys import lf_generate
+    from rait.rat_sys import lf_generate
 
     length=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -218,7 +218,7 @@ def test_lf_generate():
         lf_generate(length, poles, coeffs)
 
 def test_mlfdc_generate():
-    from .rat_sys import mlfdc_generate
+    from rait.rat_sys import mlfdc_generate
     length=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)

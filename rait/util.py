@@ -4,6 +4,59 @@ from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
 
+# interp1d is used for linear interpolation
+# source: https://github.com/aliutkus/torchinterp1d
+# date of retrieval: 2024.08.25
+from .misc.interp1d import interp1d
+
+def conj_trans(v: torch.Tensor) -> torch.Tensor:
+    """
+    Transpose and conjugate the input tensor.
+    
+    TODO: test this function, even though it is simple
+
+    Parameters
+    ----------
+    v : torch.Tensor
+        Any tensor
+
+    Returns
+    -------
+    torch.Tensor
+        Transposed and conjugated tensor.
+    """
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    return torch.conj(v).t()
+
+def check_poles(poles: torch.Tensor):
+    """
+    Checks if the poles are inside the unit circle.
+
+    Parameters
+    ----------
+    poles : torch.Tensor
+        Poles of the Blaschke product.
+        It must be a 1-dimensional torch.Tensor with complex elements.
+        It must be inside the unit circle (edge exclusive).
+
+    Raises
+    ------
+    ValueError
+        If input parameters are invalid.
+    """
+    if not isinstance(poles, torch.Tensor):
+        raise TypeError('poles must be a torch.Tensor.')
+    
+    if not poles.is_complex():
+        raise TypeError('poles must be complex numbers.')
+    
+    if poles.ndim != 1:
+        raise ValueError('poles must be a 1-dimensional torch.Tensor.')
+    
+    if torch.max(torch.abs(poles)) >= 1:
+        raise ValueError('poles must be inside the unit circle!')
+
 def addimag(v: torch.Tensor) -> torch.Tensor:
     """
     Calculates the imaginary part of v using FFT to be in Hardy space.
@@ -25,12 +78,15 @@ def addimag(v: torch.Tensor) -> torch.Tensor:
     """
 
     # Validate input parameters
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+
+    if not v.dtype.is_floating_point:
+        raise TypeError('v must have real elements.')
+
     if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
     
-    if not v.dtype.is_floating_point:
-        raise ValueError('v must have real elements.')
-
     # Calculate the imaginary part using FFT
     vf = torch.fft.fft(v)
     vif = __mt_arrange(vf)
@@ -88,16 +144,18 @@ def bisection_order(n: int) -> torch.Tensor:
         raise ValueError('n must be a non-negative integer.')
 
     # Initialize the matrix
-    bo = torch.zeros(n + 1, 3)
+    bo = torch.zeros(n + 1, 3, dtype=torch.int32)
     bo[0, :] = torch.tensor([0, -1, -1])
     bo[1, :] = torch.tensor([n, -1, -1])
     bo[2, :] = torch.tensor([n // 2, 0, n])
 
-    watch = 3  # Column currently being watched
-    fill = 4  # Where to fill the new values
+
+    watch = 2  # Column currently being watched
+    fill = 3  # Where to fill the new values
 
     # Fill the matrix with the ordering
-    while fill <= n + 1:
+    while fill < n + 1:
+
         # Get child and parents
         ch = bo[watch, 0]
         p1 = bo[watch, 1]
@@ -129,14 +187,14 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles of the Blaschke product.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the Blaschke product. Must be a 1D tensor.
     eps : float, optional
         Accuracy of the complex discretization on the unit disc (default: 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         Non-equidistant complex discretization.
 
     Raises
@@ -147,15 +205,18 @@ def discretize_dc(mpoles: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     from .blaschke import arg_inv
 
     # Validate input parameters
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
 
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    if not isinstance(eps, float):
+        raise TypeError('Eps must be a float.')
+    
+    if eps <= 0:
+        raise ValueError('Eps must be a positive number.')
 
     # Calculate the non-equidistant complex discretization
     m = len(mpoles)
-    z = torch.linspace(-torch.pi, torch.pi, m + 1)
+    #reduce the upper bound by small amount to have valid input for arg_inv
+    z = torch.linspace(-torch.pi, torch.pi - eps/1000, m + 1, dtype=torch.float64)
     t = arg_inv(mpoles, z, eps)
 
     return t
@@ -168,7 +229,7 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
+    mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the Blaschke product, expected to be a 1D tensor.
     eps : float, optional
         Accuracy of the real discretization on the unit disc, by default 1e-6.
@@ -190,7 +251,9 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
     m = mpoles.size(0)
-    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=m)
+    stepnum = 2*(m-1) + 1
+    #array of numbers ranging from -(m-1)*pi to (m-1)*pi, with pi as distance between each number
+    z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=stepnum, dtype=torch.float64)
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t
@@ -198,21 +261,22 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
+    TODO: F and G are expected to have the same number of elements, AND at least 2.
 
     Parameters
     ----------
-    F : torch.Tensor
-        Values of the first function (ID -> IC) on the unit disk.
-    G : torch.Tensor
-        Values of the second function (ID -> IC) on the unit disk.
-    poles : torch.Tensor
-        Poles of the rational system.
-    t : torch.Tensor
-        Arguments for which to evaluate the dot product.
+    F : torch.Tensor, dtype=torch.complex64
+        Values of the first function (ID -> IC) on the unit disk. 1D tensor. Must have the same number of elements as 'G'.
+    G : torch.Tensor, dtype=torch.complex64
+        Values of the second function (ID -> IC) on the unit disk. 1D tensor. Must have the same number of elements as 'F'.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1D tensor with elements inside the unit circle.
+    t : torch.Tensor, dtype=torch.float64
+        Arguments for which to evaluate the dot product. 1D tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Values of the complex dot product of 'F' and 'G' at 't'.
 
     Raises
@@ -220,22 +284,39 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
     ValueError
         If input parameters are invalid.
     """
-
     # Validate input parameters
-    if not isinstance(F, torch.Tensor) or not isinstance(G, torch.Tensor):
-        raise ValueError('F and G must be torch.Tensors.')
+    if not isinstance(F, torch.Tensor):
+        raise TypeError('F must be a torch.Tensor.')
+    if F.ndim!=1:
+        raise ValueError('F must be a 1-dimensional torch.Tensor.')
+    if not F.is_complex():
+        raise TypeError('F must have complex elements.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
-    
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
-        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if not isinstance(G, torch.Tensor):
+        raise TypeError('G must be a torch.Tensor.')
+    if G.ndim!=1:
+        raise ValueError('G must be a 1-dimensional torch.Tensor.')
+    if not G.is_complex():
+        raise TypeError('G must have complex elements.')
 
-    if F.size(0) != G.size(0) or F.size(0) != t.size(0):
-        raise ValueError('F, G, and t must have the same number of elements.')
+    if F.size(0) != G.size(0):
+        raise ValueError('F and G must have the same length.')
+    
+    check_poles(poles)
+    
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('t must be a torch.Tensor.')
+    if t.ndim!=1:
+        raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if not t.is_floating_point():
+        raise TypeError('t must have real elements.')
+
+
 
     # Compute the kernel values
-    kernel_vals = kernel(torch.exp(1j * t[:-1]), torch.exp(1j * t[:-1]), poles)
+    kernel_vals = torch.zeros(t.size(0)-1, dtype=torch.complex64)
+    for i in range(kernel_vals.size(0)):
+        kernel_vals[i] = kernel(torch.exp(1j * t[i]), torch.exp(1j * t[i]), poles)
 
     # Compute the complex discrete dot product
     s = torch.sum(F[:-1] * torch.conj(G[:-1]) / kernel_vals)
@@ -245,21 +326,22 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes discrete real dot product of two functions in H^2(ID).
+    TODO: F and G AND t are expected to have the same number of elements
 
     Parameters
     ----------
-    F : torch.Tensor
-        Values of the first function (ID -> IC) on the unit disk.
-    G : torch.Tensor
-        Values of the second function (ID -> IC) on the unit disk.
-    mpoles : torch.Tensor
-        Poles of the rational system excluding zero.
-    t : torch.Tensor
-        Arguments for which to evaluate the dot product.
+    F : torch.Tensor, dtype=torch.complex64
+        Values of the first function (ID -> IR) on the unit disk. 1D tensor. Must have the same number of elements as 'G'.
+    G : torch.Tensor, dtype=torch.complex64
+        Values of the second function (ID -> IR) on the unit disk. 1D tensor. Must have the same number of elements as 'F'.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1D tensor with elements inside the unit circle.
+    t : torch.Tensor, dtype=torch.float64
+        Arguments for which to evaluate the dot product. 1D tensor.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Values of the real dot product of 'F' and 'G' at 't'.
 
     Raises
@@ -270,25 +352,39 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
 
     # Validate input parameters
     if not isinstance(F, torch.Tensor):
-        raise ValueError('F must be a torch.Tensor.')
+        raise TypeError('F must be a torch.Tensor.')
+    if F.ndim!=1:
+        raise ValueError('F must be a 1-dimensional torch.Tensor.')
+    if not F.is_complex():
+        raise TypeError('F must have complex elements.')
     
     if not isinstance(G, torch.Tensor):
-        raise ValueError('G must be a torch.Tensor.')
+        raise TypeError('G must be a torch.Tensor.')
+    if G.ndim!=1:
+        raise ValueError('G must be a 1-dimensional torch.Tensor.')
+    if not G.is_complex():
+        raise TypeError('G must have complex elements.')
+
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
     
-    if not isinstance(t, torch.Tensor) or t.ndim != 1:
+    check_poles(mpoles)
+    
+    if not isinstance(t, torch.Tensor):
+        raise TypeError('t must be a torch.Tensor.')
+    if t.ndim!=1:
         raise ValueError('t must be a 1-dimensional torch.Tensor.')
+    if not t.is_floating_point():
+        raise TypeError('t must have real elements.')
 
-    if F.size(0) != G.size(0):
-        raise ValueError('F and G must have the same number of elements.')
-
+    if F.size(0) != G.size(0) or F.size(0) != t.size(0):
+        raise ValueError('F, G, and t must have the same length.')
+    
     # Prepend zero to the poles
-    mpoles_with_zero = torch.cat((torch.zeros(1), mpoles))
-
+    mpoles = torch.cat((torch.zeros(1), mpoles))
     # Compute the kernel values
-    kernel_vals = kernel(torch.exp(1j * t), torch.exp(1j * t), mpoles_with_zero)
+    kernel_vals = torch.zeros(t.size(0), dtype=torch.complex64)
+    for i in range(kernel_vals.size(0)):
+        kernel_vals[i] = kernel(torch.exp(1j * t[i]), torch.exp(1j * t[i]), mpoles)
 
     # Compute the real discrete dot product
     s = torch.sum(F * torch.conj(G) / (2 * torch.real(kernel_vals) - 1))
@@ -305,29 +401,46 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    y : torch.Tensor
-        First argument.
-    z : torch.Tensor
-        Second argument.
-    mpoles : torch.Tensor
-        Poles of the rational system.
+    y : torch.Tensor, dtype=torch.complex64
+        First argument. Only one element.
+    z : torch.Tensor, dtype=torch.complex64
+        Second argument. Only one element.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system. Must be a 1D tensor.
 
     Returns
     -------
     torch.Tensor
         Value of the weight function at arguments "y" and "z".
     """
-    r = torch.zeros_like(y)
+    # Validate input parameters
+    if not isinstance(y, torch.Tensor):
+        raise TypeError('y must be a torch.Tensor.')
+    if y.ndim != 0:
+        raise ValueError('y must be a single number.')
+    if not y.is_complex():
+        raise TypeError('y must be a complex number.')
+
+    if not isinstance(z, torch.Tensor):
+        raise TypeError('z must be a torch.Tensor.')
+    if z.ndim != 0:
+        raise ValueError('z must be a single number.')
+    if not z.is_complex():
+        raise TypeError('z must be a complex number.')
+
+    check_poles(mpoles)
+
+    r = torch.zeros_like(y, dtype=torch.complex64)
     m = len(mpoles)
-    if y == z:
+    if torch.allclose(y, z):
         for k in range(m):
             alpha = torch.angle(mpoles[k])
             R = torch.abs(mpoles[k])
             t = torch.angle(z)
             r += __poisson(R, t - alpha)
     else:
-        for i in range(1, m + 1):
-            r += __MT(i - 1, mpoles, y) * torch.conj(__MT(i - 1, mpoles, z))
+        for i in range(m):
+            r += __MT(i, mpoles, y) * torch.conj(__MT(i, mpoles, z))
     return r
 
 def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
@@ -346,7 +459,7 @@ def __poisson(r:torch.Tensor,t:torch.Tensor) -> torch.Tensor:
     torch.Tensor
         The calculated Poisson ratio.
     """
-    return (1-r**2)/(1-2*r*math.cos(t)+r**2)
+    return (1-r**2)/(1-2*r*torch.cos(t)+r**2)
 
 def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
     """
@@ -366,10 +479,10 @@ def __MT(n: int, mpoles: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
         torch.Tensor
             Values of the Malmquist-Takenaka function.
     """
-    r = torch.ones_like(z)
+    r = torch.ones_like(z, dtype=torch.complex64)
     for k in range(n):
         r *= (z - mpoles[k]) / (1 - torch.conj(mpoles[k]) * z)
-    r *= math.sqrt(1 - torch.abs(mpoles[n]) ** 2 / (1 - torch.conj(mpoles[n]) * z))
+    r *= torch.sqrt(1 - torch.abs(mpoles[n]) ** 2) / (1 - torch.conj(mpoles[n]) * z)
     return r
 
 def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -378,8 +491,8 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 
     Parameters
     ----------
-    mpoles : torch.Tensor
-        Poles with arbitrary multiplicities.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles with arbitrary multiplicities. It must be a 1D tensor.
 
     Returns
     -------
@@ -393,22 +506,49 @@ def multiplicity(mpoles: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     ValueError
         If input parameters are invalid.
     """
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
-    unique, counts = torch.unique(torch.tensor(mpoles), return_counts=True)
-    return unique, counts
+    check_poles(mpoles)
+    poles = mpoles
+    #the tensor of multiplicities of poles
+    mult = torch.ones_like(mpoles, dtype = torch.int32) 
+    #the tensor of poles that contains each pole only once
+    spoles = torch.zeros_like(mpoles, dtype = torch.complex64) 
+    spoles_index=0
+
+    while poles.numel() > 0:
+        #indexes of the poles that are equal to the first element in poles, including the first element
+        ind = [0]
+
+        for i in range (1,poles.numel()):
+            #instead of exact comparison, torch.allclose is used to compare the poles
+            if torch.allclose(poles[i], poles[0]):
+                ind.append(i)
+                mult[spoles_index] += 1
+        spoles[spoles_index] = poles[0]
+
+        #remove the poles that are equal to the first pole INCLUDING the first pole
+        for i in range(len(ind)-1,-1,-1):#remove backwards to avoid index errors
+            poles = torch.cat((poles[0:ind[i]],poles[ind[i]+1:]))
+        spoles_index += 1
+        
+    
+    spoles = spoles[0:spoles_index]
+    mult = mult[0:spoles_index]
+    return spoles, mult
+
 
 def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     """
-    TODO: check if interpolation without numpy is correct here
     Interpolate values between uniform sampling points using linear interpolation.
-
+    
     Parameters
     ----------
-    sample : torch.Tensor
-        A 1D tensor of uniformly sampled values on [-pi, pi).
-    x : torch.Tensor
-        The values at which interpolation is to be computed.
+    sample : torch.Tensor, dtype=torch.complex64
+        A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
+        
+        TODO: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not within [-pi, pi)
+        Despite this, it is still used as an input to this function.
+    x : torch.Tensor, dtype=torch.float64
+        The values at which interpolation is to be computed. 1D tensor.
 
     Returns
     -------
@@ -416,17 +556,21 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
         The interpolated values at the points specified by x.
     """
 
-    # Validate input types
+    # Validate input parameters
     if not isinstance(sample, torch.Tensor):
-        raise TypeError("sample must be a torch.Tensor")
+        raise TypeError('sample must be a torch.Tensor.')
+    if sample.ndim != 1:
+        raise ValueError('sample must be a 1-dimensional torch.Tensor.')
+    if not sample.is_complex():
+        raise TypeError('sample must have complex elements.')
+    
+    
     if not isinstance(x, torch.Tensor):
-        raise TypeError("x must be a torch.Tensor")
-
-    # Validate input dimensions
-    if sample.dim() != 1:
-        raise ValueError("sample must be a 1D tensor")
-    if x.dim() != 1:
-        raise ValueError("x must be a 1D tensor")
+        raise TypeError('x must be a torch.Tensor.')
+    if x.ndim != 1:
+        raise ValueError('x must be a 1-dimensional torch.Tensor.')
+    if not x.is_floating_point():
+        raise TypeError('x must have real elements.')
 
     # Number of samples
     len = sample.size(0)
@@ -434,35 +578,25 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Create a tensor of sample points
     sx = torch.linspace(-torch.pi, torch.pi, len)
 
-    # Reshape x to (N, 1, 1) and sx to (1, len, 1) for broadcasting
-    x_reshaped = x.view(-1, 1, 1)
-    sx_reshaped = sx.view(1, -1, 1)
+    y = interp1d(sx, sample, x)
+    y = y[0]
+    return y
 
-    # Compute the ratio for interpolation
-    ratio = (x_reshaped - sx_reshaped) / (2 * torch.pi / len)
 
-    # Use torch.nn.functional.interpolate for interpolation
-    y = torch.nn.functional.interpolate(sample.view(1, 1, -1), scale_factor=ratio, mode='linear', align_corners=True)
-
-    # Squeeze to remove extra dimensions
-    return y.squeeze()
-
-from mt_sys import mt_system
-from biort_sys import biort_system
-from rat_sys import lf_system, mlf_system
 
 def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, base2:str) -> torch.Tensor:
     """
     Convert the coefficients between the continuous systems base1 and base2.
+    NOTE: coeffs has to be the same length as poles
 
     Parameters
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the continuous systems.
-    coeffs : torch.Tensor
-        Coefficients with respect to the continuous system 'base1'.
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the continuous systems. Must be a 1D tensor. Must be inside the unit circle.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients with respect to the continuous system 'base1'. 1D tensor.
     base1 : str
         Type of the continuous system to be converted.
     base2 : str
@@ -470,7 +604,7 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, 
         Converted coefficients with respect to the system 'base2'.
     
     Raises
@@ -478,17 +612,38 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     ValueError
         If input parameters are invalid.
     """
-    
+    from .mt_sys import mt_system
+    from .biort_sys import biort_system
+    from .rat_sys import lf_system, mlf_system
+
     # Validate input parameters
-    if poles.size(0) != 1:
-        raise ValueError("poles must be a 1D tensor")
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
     if length < 2:
-        raise ValueError("length must be an integer greater than or equal to 2.")
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+        raise ValueError('length must be an integer greater than or equal to 2.')
     
-    if coeffs.size(0) != 1:
-        raise ValueError('Coeffs should be row vector!')
+    check_poles(poles)
+
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must have complex elements.')
+    
+    #coeffs has to be the same length as poles
+    if coeffs.size(0) != poles.size(0):
+        raise ValueError('coeffs must have the same length as poles.')
+    
+    if not isinstance(base1, str):
+        raise TypeError('base1 must be a string.')
+    if base1 not in ['lf', 'mlf', 'biort', 'mt']:
+        raise ValueError('Invalid system type for base1! Choose from lf, mlf, biort, mt.')
+    
+    if not isinstance(base2, str):
+        raise TypeError('base2 must be a string.')
+    if base2 not in ['lf', 'mlf', 'biort', 'mt']:
+        raise ValueError('Invalid system type for base2! Choose from lf, mlf, biort, mt.')
     
     # Helper function
     def get_system(base, length, poles):
@@ -506,24 +661,23 @@ def coeff_conv(length:int, poles:torch.Tensor, coeffs:torch.Tensor, base1:str, b
     # Get systems for base1 and base2
     g1 = get_system(base1, length, poles)
     g2 = get_system(base2, length, poles)
-    #TODO: check if the lines below are correct
-    # Perform matrix operations
-    F = g1.mm(g1.t()) / length
-    G = g1.mm(g2.t()) / length
+
+    F = torch.matmul(g1,conj_trans(g1)) / length
+    G = torch.matmul(g1,conj_trans(g2)) / length
     
-    # Solve linear system and return converted coefficients
-    co = torch.linalg.solve(G, F.mm(coeffs.t())).t()
-    
+    co = torch.linalg.solve(G,F)
+    co = torch.matmul(co, conj_trans(coeffs))
+    co = conj_trans(co)
     return co
 
 def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: str, eps: float = 1e-6) -> torch.Tensor:
     """
     Converts the coefficients between the discrete systems base1 and base2.
-
+    NOTE: coeffs has to be the same length as poles
     Parameters
     ----------
-    poles : torch.Tensor
-        Poles of the discrete systems (1-dimensional tensor).
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete systems (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor
         Coefficients with respect to the discrete system 'base1' (1-dimensional tensor).
     base1 : str
@@ -535,7 +689,7 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Converted coefficients with respect to the system 'base2'.
 
     Raises
@@ -543,43 +697,67 @@ def coeffd_conv(poles: torch.Tensor, coeffs: torch.Tensor, base1: str, base2: st
     ValueError
         If input parameters are invalid.
     """
+    from .rat_sys import mlfdc_system
+    from .biort_sys import biortdc_system
+    from .mt_sys import mtdc_system
 
     # Validate input parameters
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    check_poles(poles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
-        raise ValueError('Coeffs should be a 1-dimensional torch.Tensor.')
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must have complex elements.')
     
-    if not isinstance(base1, str) or not isinstance(base2, str):
-        raise ValueError('Base1 and Base2 must be strings.')
-    
-    if not isinstance(eps, float):
-        raise ValueError('Eps must be a float.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    #coeffs has to be the same length as poles
+    if coeffs.size(0) != poles.size(0):
+        raise ValueError('coeffs must have the same length as poles.')
 
+    if not isinstance(base1, str):
+        raise TypeError('base1 must be a string.')
     if base1 not in ['mlfdc', 'biortdc', 'mtdc']:
         raise ValueError('Invalid system type for base1! Choose from mlfdc, biortdc, mtdc.')
-    
+    if not isinstance(base2, str):
+        raise TypeError('base2 must be a string.')
     if base2 not in ['mlfdc', 'biortdc', 'mtdc']:
         raise ValueError('Invalid system type for base2! Choose from mlfdc, biortdc, mtdc.')
     
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
+    
+    # Helper function
+    def get_system(base, mpoles, eps):
+        if base == 'mlfdc':
+            return mlfdc_system(mpoles, eps)
+        elif base == 'biortdc':
+            return biortdc_system(mpoles, eps)
+        elif base == 'mtdc':
+            return mtdc_system(mpoles, eps)
+        else:
+            raise ValueError('Invalid system type! Choose from mlfdc, biortdc, mtdc.')
+
     # Generate systems based on 'base1' and 'base2'
-    g1 = globals()[f'{base1}_system'](poles, eps)
-    g2 = globals()[f'{base2}_system'](poles, eps)
+    g1 = get_system(base1, poles, eps)
+    g2 = get_system(base2, poles, eps)
 
     # Convert coefficients between systems
-    F = g1 @ g1.t() / coeffs.shape[0]
-    G = g1 @ g2.t() / coeffs.shape[0]
-    
-    co = torch.linalg.solve(G.t(), F @ coeffs.unsqueeze(0).t()).squeeze()
+    F = g1 @ conj_trans(g1) / coeffs.size(0)
+    G = g1 @ conj_trans(g2) / coeffs.size(0)
+
+    co = torch.linalg.solve(G, F)
+    co = co @ conj_trans(coeffs)
+    co = conj_trans(co)
 
     return co
 
 def periodize(v: torch.Tensor, alpha: float, draw: bool = False) -> torch.Tensor:
     """
+    NOTE: This function is untested and may not work as intended.
+
     Calculates the periodized extension of a signal.
 
     Parameters
@@ -771,6 +949,8 @@ def __curvatures(x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.
 
 def rshow(*args):
     """
+    NOTE: This function is untested and may not work as intended.
+
     Visualizes the given function, system, or systems.
 
     Usage:

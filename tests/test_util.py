@@ -3,7 +3,7 @@ import pytest
 import re 
 
 def test_check_poles():
-    from .util import check_poles
+    from rait.util import check_poles
     #a
     regex = re.compile(re.escape('poles must be a torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
@@ -27,7 +27,7 @@ def test_check_poles():
 
 #addimag test
 def test_addimag():
-    from .util import addimag
+    from rait.util import addimag
     v1 = torch.tensor([1.0, 2.0, 3.0])
     assert torch.equal(addimag(v1), torch.tensor([2.+0.j, 2.+0.j, 2.+0.j]))
     v2 = torch.tensor([1.0, 1.0, 1.0, 1.0])
@@ -47,7 +47,7 @@ def test_addimag():
         addimag(v6)
 
 def test_bisection_order():
-    from .util import bisection_order
+    from rait.util import bisection_order
     result = bisection_order(4)
     expected_result = torch.tensor(
         [[ 0, -1, -1],
@@ -63,7 +63,7 @@ def test_bisection_order():
         bisection_order(-1)
 
 def test_multiplicity():
-    from .util import multiplicity
+    from rait.util import multiplicity
 
     a = torch.tensor([0,0,0.5,0,-0.5j], dtype=torch.complex64)
     spoles, mult = multiplicity(a)
@@ -73,7 +73,7 @@ def test_multiplicity():
     assert torch.equal(mult, expected_mult)
 
 def test_kernel():
-    from .util import kernel
+    from rait.util import kernel
     #TODO: type specification of y and z
     #when y and z are equal
     y=torch.tensor(-1j, dtype=torch.complex64)
@@ -89,7 +89,7 @@ def test_kernel():
     expected_result = torch.tensor(0.8000-0.4000j,dtype=torch.complex64)
 
 def test_discretize_dc():
-    from .util import discretize_dc
+    from rait.util import discretize_dc
 
     a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor([-3.141593, -1.220906,  0.293611,  3.141591], dtype=torch.float64)
@@ -99,7 +99,7 @@ def test_discretize_dc():
     #a is already tested with check_poles(a) in util.py, so done here
 
 def test_discretize_dr():
-    from .util import discretize_dr
+    from rait.util import discretize_dr
 
     a = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor([-2.547801, -1.727318, -1.088921, -0.372949,  0.261651,  1.153941, 2.466805], dtype=torch.float64)
@@ -109,7 +109,7 @@ def test_discretize_dr():
     #a is already tested with check_poles(a) in util.py, so done here
 
 def test_subsample():
-    from .util import subsample, discretize_dr
+    from rait.util import subsample, discretize_dr
     sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     x = discretize_dr(sample)
     expected_result=torch.tensor([0.000000-0.405495j, 0.000000-0.274911j, 0.000000-0.173307j, 0.000000-0.059357j, 0.041643+0.000000j, 0.183655+0.000000j, 0.392604+0.000000j], dtype=torch.complex128)
@@ -141,7 +141,7 @@ def test_subsample():
         subsample(sample, x)
 
 def test_dotdc():
-    from .util import dotdc
+    from rait.util import dotdc
     F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
     G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -217,7 +217,7 @@ def test_dotdc():
         dotdc(F, G, poles, t)
 
 def test_dotdr():
-    from .util import dotdr
+    from rait.util import dotdr
     F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
     G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -310,7 +310,7 @@ def test_dotdr():
         dotdr(F, G, poles, t)
 
 def test_coeff_conv():
-    from .util import coeff_conv
+    from rait.util import coeff_conv
     #lf to biort
     length=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -409,7 +409,7 @@ def test_coeff_conv():
         coeff_conv(length, poles, coeffs, base1, base2)
 
 def test_coeffd_conv():
-    from .util import coeffd_conv
+    from rait.util import coeffd_conv
 
     #mlfdc to biortdc
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)

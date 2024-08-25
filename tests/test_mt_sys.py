@@ -3,7 +3,7 @@ import pytest
 import re 
 
 def test_mt_system():
-    from .mt_sys import mt_system
+    from rait.mt_sys import mt_system
     len=3
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
@@ -23,7 +23,7 @@ def test_mt_system():
         mt_system(1, poles)
 
 def test_mtdc_system():
-    from .mt_sys import mtdc_system
+    from rait.mt_sys import mtdc_system
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_result = torch.tensor(
         [[ 0.692820-0.346410j,  1.478635+0.477912j,  0.643976+0.269247j, 0.692820-0.346410j],
@@ -44,7 +44,7 @@ def test_mtdc_system():
         mtdc_system(mpoles, eps=0.)
 
 def test_mtdr_system():
-    from .mt_sys import mtdr_system
+    from rait.mt_sys import mtdr_system
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_re = torch.tensor(
         [[1.000000,1.000000,1.000000,1.000000,1.000000,1.000000,1.000000],
@@ -73,7 +73,7 @@ def test_mtdr_system():
         mtdr_system(poles, eps=0.)
 
 def test_mt_coeffs():
-    from .mt_sys import mt_coeffs
+    from rait.mt_sys import mt_coeffs
     v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     expected_co = torch.tensor([-0.621933+0.530092j,0.415187+0.256114j,0.348194+0.349086j], dtype=torch.complex64)
@@ -99,7 +99,7 @@ def test_mt_coeffs():
     #poles is already tested with check_poles(poles) in mt_sys.py
 
 def test_mtdc_coeffs():
-    from .mt_sys import mtdc_coeffs
+    from rait.mt_sys import mtdc_coeffs
     signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     co,err = mtdc_coeffs(signal, poles)
@@ -134,7 +134,7 @@ def test_mtdc_coeffs():
         mtdc_coeffs(signal, mpoles, eps=0.)
 
 def test_mtdr_generate():
-    from .mt_sys import mtdr_generate
+    from rait.mt_sys import mtdr_generate
 
     length = 5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -214,7 +214,7 @@ def test_mtdr_generate():
         mtdr_generate(length, mpoles, cUk, cVk)
 
 def test_mtdr_coeffs():
-    from .mt_sys import mtdr_coeffs
+    from rait.mt_sys import mtdr_coeffs
 
     v = torch.tensor([2, 0, -1], dtype=torch.float64)
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
@@ -253,7 +253,7 @@ def test_mtdr_coeffs():
         mtdr_coeffs(v, mpoles, eps=0.)
 
 def test_mt_generate():
-    from .mt_sys import mt_generate
+    from rait.mt_sys import mt_generate
     length=5
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
@@ -298,7 +298,7 @@ def test_mt_generate():
         mt_generate(length, poles, coeffs)
 
 def test_mtdc_generate():
-    from .mt_sys import mtdc_generate
+    from rait.mt_sys import mtdc_generate
     length=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
