@@ -28,26 +28,20 @@ def arg_der(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     # Validate input parameters
     if not isinstance(a, torch.Tensor):
         raise TypeError('"a" must be a torch.Tensor.')
-    
     if not a.is_complex():
         raise TypeError('"a" must be a complex torch.Tensor.')
-    
     if a.ndim != 1:
         raise ValueError('"a" must be a 1-dimensional torch.Tensor.')
-    
     if torch.max(torch.abs(a)) >= 1:
         raise ValueError('Elements of "a" must be inside the unit circle!')
     
 
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
-    
     if not t.is_floating_point():
         raise TypeError('"t" must be a float torch.Tensor.')
-
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
-    
     if torch.min(t) < -torch.pi or torch.max(t) >= torch.pi:
         raise ValueError('Elements of "t" must be in [-pi, pi).')
     
@@ -251,8 +245,8 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
     
-    if not t.is_floating_point:
-        raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
+    if not t.is_floating_point():
+        raise TypeError('"t" must be a float torch.Tensor.')
 
     if t.ndim != 1:
         raise ValueError('"t" must be a 1-dimensional torch.Tensor.')
@@ -346,7 +340,7 @@ def arg_inv(a: torch.Tensor, b: torch.Tensor, epsi: float = 1e-4) -> torch.Tenso
     """
 
     """ print("arg_inv") """
-    from util import check_poles
+    from .util import check_poles
     # Validate input parameters
     check_poles(a)
     
@@ -428,7 +422,7 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
         Inverse images by the argument function of the points in 'b'.
     """
     """ print("arg_inv_all") """
-    from util import bisection_order
+    from .util import bisection_order
 
     # Validate input parameters
     if not isinstance(a, torch.Tensor) or a.ndim != 1:
@@ -444,7 +438,6 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     n = len(b)
     s = bisection_order(n)
     x = torch.zeros(n+1, dtype=torch.float64)
-    debug=False
     for i in range(n+1):
         
         if i == 0:

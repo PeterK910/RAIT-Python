@@ -251,7 +251,7 @@ def arg_fun(a: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     if not isinstance(t, torch.Tensor):
         raise TypeError('"t" must be a torch.Tensor.')
     
-    if not t.is_floating_point:
+    if not t.is_floating_point():
         raise TypeError('"t" must be a torch.Tensor with float64 dtype.')
 
     if t.ndim != 1:
@@ -444,7 +444,6 @@ def __arg_inv_all(a: torch.Tensor, b: torch.Tensor, epsi: float) -> torch.Tensor
     n = len(b)
     s = bisection_order(n)
     x = torch.zeros(n+1, dtype=torch.float64)
-    debug=False
     for i in range(n+1):
         
         if i == 0:

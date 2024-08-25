@@ -44,10 +44,10 @@ def test_arg_fun():
         t = [1, 2, 3]
         arg_fun(a, t)
 
-    regex = re.compile(re.escape('"t" must be a torch.Tensor with float64 dtype.'))
+    regex = re.compile(re.escape('"t" must be a float torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
         a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        t = torch.tensor([1, 2, 3], dtype=torch.int)
         arg_fun(a, t)
 
     regex = re.compile(re.escape('"t" must be a 1-dimensional torch.Tensor.'))
@@ -80,10 +80,10 @@ def test_argdr_fun():
         t = [1, 2, 3]
         argdr_fun(a, t)
 
-    regex = re.compile(re.escape('"t" must be a torch.Tensor with float64 dtype.'))
+    regex = re.compile(re.escape('"t" must be a float torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
         a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        t = torch.tensor([1, 2, 3], dtype=torch.int)
         argdr_fun(a, t)
 
     regex = re.compile(re.escape('"t" must be a 1-dimensional torch.Tensor.'))
@@ -127,10 +127,10 @@ def test_argdr_inv():
         b = [1, 2, 3]
         argdr_inv(a, b)
 
-    regex = re.compile(re.escape('"b" must be a torch.Tensor with float64 dtype.'))
+    regex = re.compile(re.escape('"b" must be a float torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
         a = torch.tensor([-0.5j], dtype=torch.complex64)
-        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        b = torch.tensor([1, 2, 3], dtype=torch.int)
         argdr_inv(a, b)
 
     regex = re.compile(re.escape('"b" must be a 1-dimensional torch.Tensor.'))
@@ -192,10 +192,10 @@ def test_arg_der():
         t = [1, 2, 3]
         arg_der(a, t)
 
-    regex = re.compile(re.escape('"t" must be a torch.Tensor with float64 dtype.'))
+    regex = re.compile(re.escape('"t" must be a float torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
         a = torch.tensor([0.5, 0.5, 0.5], dtype=torch.complex64)
-        t = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        t = torch.tensor([1, 2, 3], dtype=torch.int)
         arg_der(a, t)
 
     regex = re.compile(re.escape('"t" must be a 1-dimensional torch.Tensor.'))
@@ -251,10 +251,10 @@ def test_arg_inv():
         b = [1, 2, 3]
         arg_inv(a, b)
 
-    regex = re.compile(re.escape('"b" must be a torch.Tensor with float64 dtype.'))
+    regex = re.compile(re.escape('"b" must be a float torch.Tensor.'))
     with pytest.raises(TypeError, match=regex):
         a = torch.tensor([-0.5j], dtype=torch.complex64)
-        b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float32)
+        b = torch.tensor([1, 2, 3], dtype=torch.int)
         arg_inv(a, b)
 
     regex = re.compile(re.escape('"b" must be a 1-dimensional torch.Tensor.'))

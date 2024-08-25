@@ -12,8 +12,8 @@ def test_coords2params():
     with pytest.raises(TypeError, match="Input k must be a torch.Tensor"):
         k=3
         coords2params(k)
-    with pytest.raises(TypeError, match="Input k must be a tensor of dtype float64"):
-        k=torch.tensor([3,3,1,0,-1,4],dtype=torch.float32)
+    with pytest.raises(TypeError, match="Input k must be a float tensor"):
+        k=torch.tensor([3,3,1,0,-1,4],dtype=torch.int)
         coords2params(k)
     with pytest.raises(ValueError, match="Input k must be a 1D row vector with an even number of elements"):
         k=torch.tensor([3,3,1,0,-1],dtype=torch.float64)
@@ -34,8 +34,8 @@ def test_coords2params_all():
     with pytest.raises(TypeError, match="k must be a torch.Tensor."):
         k=3
         coords2params_all(k)
-    with pytest.raises(TypeError, match="k must be a tensor of dtype float64"):
-        k=torch.tensor([[1,1,0,1,-1,0],[1,1,0,1,-1,-1]],dtype=torch.float32)
+    with pytest.raises(TypeError, match="k must be a float tensor."):
+        k=torch.tensor([[1,1,0,1,-1,0],[1,1,0,1,-1,-1]],dtype=torch.int)
         coords2params_all(k)
     with pytest.raises(ValueError, match="k must be a 2D tensor with an even number of columns"):
         k=torch.tensor([1,1,0,1,-1,0],dtype=torch.float64)
