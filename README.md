@@ -9,7 +9,7 @@ This repository implements the RAIT matlab library
 
 ## Known issues
 ### Overinstallation
-`pip install -e .` will install far more pytorch-related packages than what is needed to run on desktop (not necessarily GPU)
+`pip install -e .` will install far more pytorch-related packages than what is probably needed to run on desktop (not necessarily GPU)
 
 Check setup.py if this can be remedied.
 ### Unimplemented/untested functions
