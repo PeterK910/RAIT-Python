@@ -366,7 +366,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     """
     Generates a function in the space spanned by the discrete biorthogonal system.
 
-    NOTE: The function still uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
+    NOTE: The function uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
 
     Parameters
     ----------
@@ -415,7 +415,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     if not coeffs.is_complex():
         raise TypeError('coeffs must be a complex tensor.')
     
-    #coeffs must have the same number of elements as poles
+    #coeffs must have the same number of elements as mpoles
     if mpoles.size(0) != coeffs.size(0):
         raise ValueError('mpoles and coeffs must have the same number of elements.')
 
