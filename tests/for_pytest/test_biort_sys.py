@@ -68,3 +68,39 @@ def test_biort_coeffs():
         poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
         biort_coeffs(v, poles)
     #poles is already tested with check_poles(poles) in biort_sys.py
+
+def test_biortdc_coeffs():
+    from .biort_sys import biortdc_coeffs
+
+    v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
+    co,err = biortdc_coeffs(v, poles)
+    err = torch.tensor(err)
+    expected_co = torch.tensor([-0.346997+1.154818j,-0.046167+1.217733j,-0.177091+0.879845j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.080572)
+    assert torch.allclose(co, expected_co)
+    assert torch.allclose(err, expected_err)
+
+    #input validation
+    with pytest.raises(TypeError, match="v must be a torch.Tensor."):
+        v = [2j, 0, -2]
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        biortdc_coeffs(v, mpoles)
+    with pytest.raises(ValueError, match="v must be a 1-dimensional torch.Tensor."):
+        v = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        biortdc_coeffs(v, mpoles)
+    with pytest.raises(TypeError, match="v must be a complex tensor."):
+        v = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        biortdc_coeffs(v, mpoles)
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        biortdc_coeffs(v, mpoles, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        v = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        biortdc_coeffs(v, mpoles, eps=0.)

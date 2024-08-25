@@ -289,7 +289,7 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     
     co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
     
-    err = torch.linalg.norm(co @ bts - v,).item()
+    err = torch.linalg.norm(co @ bts - v).item()
     """
     print(f"mlfs = {mlfs}")
     print(f"bts = {bts}")
@@ -363,7 +363,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the biorthogonal system (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor, dtype=torch.complex64
-        Complex oefficients of the linear combination to form (1-dimensional tensor).
+        Complex coefficients of the linear combination to form (1-dimensional tensor).
 
     Returns
     -------
@@ -422,16 +422,16 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
 
     Parameters
     ----------
-    v : torch.Tensor
-        An arbitrary vector.
-    mpoles : torch.Tensor
-        Poles of the biorthogonal system.
+    v : torch.Tensor, dtype=torch.complex64
+        An arbitrary 1-dimensional tensor.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the biorthogonal system. 1-dimensional tensor. Must be inside the unit circle.
     eps : float, optional
         Accuracy of the discretization on the unit disc. Default is 1e-6.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of v with respect to the discrete 
         biorthogonal system defined by 'mpoles'.
     float
@@ -442,28 +442,30 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     ValueError
         If input parameters are invalid.
     """
-    from util import discretize_dc, subsample, dotdc
+    from util import discretize_dc, subsample, dotdc, check_poles
     from rat_sys import mlfdc_system
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_complex():
+        raise TypeError('v must be a complex tensor.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
+    check_poles(mpoles)
     
     if not isinstance(eps, float):
-        raise ValueError('eps must be a float.')
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Discretize and sample
+    m = mpoles.numel()
     t = discretize_dc(mpoles, eps)
     samples = subsample(v, t)
 
     # Calculate coefficients
-    m = len(mpoles)
-    co = torch.zeros(m)
+    co = torch.zeros(m, dtype=torch.complex64)
     mlf = mlfdc_system(mpoles, eps)
 
     for i in range(m):
