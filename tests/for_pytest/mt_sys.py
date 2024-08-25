@@ -513,21 +513,24 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     """
     Calculates the mtdr-coefficients of 'v' with respect to the discrete real MT system given by 'mpoles'.
 
+    NOTE: verify if v should be complex or real. Right now, it is real as per test.m from matlab code.
+
+    NOTE: verify if output cUk and cVk should be complex or real. Right now, they are real as per test.m from matlab code.
     Parameters
     ----------
-    v : torch.Tensor
-        An arbitrary vector.
-    mpoles : torch.Tensor
-        Poles of the discrete real MT system.
+    v : torch.Tensor, dtype=torch.float64
+        An arbitrary 1-dimensional tensor.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the discrete real MT system. 1-dimensional tensor. Must be inside the unit circle.
     eps : float, optional
         Accuracy of the real discretization on the unit disc. Default is 1e-6.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         The Fourier coefficients of 'v' with respect to the real part 
         of the discrete real MT system defined by 'mpoles'.
-    torch.Tensor
+    torch.Tensor, dtype=torch.float64
         The Fourier coefficients of 'v' with respect to the imaginary 
         part of the discrete real MT system defined by 'mpoles'.
     float
@@ -538,33 +541,46 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
     ValueError
         If input parameters are invalid.
     """
-    from util import discretize_dr, subsample, dotdr
+    from .util import discretize_dr, subsample, dotdr, check_poles
 
     # Validate input parameters
-    if not isinstance(v, torch.Tensor) or v.ndim != 1:
+    if not isinstance(v, torch.Tensor):
+        raise TypeError('v must be a torch.Tensor.')
+    if v.ndim != 1:
         raise ValueError('v must be a 1-dimensional torch.Tensor.')
+    if not v.is_floating_point():
+        raise TypeError('v must be a float tensor.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
     
-    if not isinstance(eps, float) or eps <= 0:
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
         raise ValueError('eps must be a positive float.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('mpoles must be inside the unit circle!')
 
     # Calculate the mtdr system elements
     m = len(mpoles) + 1
     t = discretize_dr(mpoles, eps)
+    #convert v to complex64 for subsample function
+    v = v.to(torch.complex64)
     samples = subsample(v, t)
     
-    cUk = torch.zeros(m)
-    cVk = torch.zeros(m)
+    cUk = torch.zeros(m, dtype=torch.float64)
+    cVk = torch.zeros(m, dtype=torch.float64)
     
     mts_re, mts_im = mtdr_system(mpoles, eps)
+    mts_re = mts_re.to(torch.complex64)
+    mts_im = mts_im.to(torch.complex64)
 
     for i in range(m):
+        #print(f"i: {i}")
+        #print(f"mts_re[i]: {mts_re[i]}")
+        #print(f"mts_re[i].dtype: {mts_re[i].dtype}")
+        #warning is thrown here because of the complex64 type of mts_re[i] and samples
+        #whereas cUk is float64. See note above.
         cUk[i] = dotdr(samples, mts_re[i], mpoles, t)
+        #print(f"mts_im[i]: {mts_im[i]}")
+        #print(f"mts_im[i].dtype: {mts_im[i].dtype}")
         cVk[i] = dotdr(samples, mts_im[i], mpoles, t)
 
     SRf = mtdr_generate(len(v), mpoles, cUk, cVk)

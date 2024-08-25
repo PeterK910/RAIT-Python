@@ -327,6 +327,7 @@ def dotdr(F: torch.Tensor, G: torch.Tensor, mpoles: torch.Tensor, t: torch.Tenso
     """
     Computes discrete real dot product of two functions in H^2(ID).
     NOTE: F and G AND t are expected to have the same number of elements
+
     Parameters
     ----------
     F : torch.Tensor, dtype=torch.complex64
@@ -543,6 +544,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     ----------
     sample : torch.Tensor, dtype=torch.complex64
         A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
+        
         NOTE: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not withing [-pi, pi)
         Despite this, it is used as an input to this function.
     x : torch.Tensor, dtype=torch.float64

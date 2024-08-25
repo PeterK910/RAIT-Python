@@ -212,3 +212,42 @@ def test_mtdr_generate():
         cUk = torch.tensor([1,2,3,4], dtype=torch.float64)
         cVk = torch.tensor([-1,-2,-3,-4,-5], dtype=torch.float64)
         mtdr_generate(length, mpoles, cUk, cVk)
+
+def test_mtdr_coeffs():
+    from .mt_sys import mtdr_coeffs
+
+    v = torch.tensor([2, 0, -1], dtype=torch.float64)
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    cUk, cVk, err = mtdr_coeffs(v, mpoles)
+    err = torch.tensor(err)
+    expected_cUk = torch.tensor([0.240428,-0.189690,0.334254,-0.148325], dtype=torch.float64)
+    expected_cVk = torch.tensor([0.000000,-0.400554,0.153981,-0.111509], dtype=torch.float64)
+    expected_err = torch.tensor(1.935322)
+    assert torch.allclose(cUk, expected_cUk)
+    assert torch.allclose(cVk, expected_cVk)
+    assert torch.allclose(err, expected_err)
+
+    #input validation
+    #v
+    with pytest.raises(TypeError, match="v must be a torch.Tensor."):
+        v = [2, 0, -1]
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_coeffs(v, mpoles)
+    with pytest.raises(ValueError, match="v must be a 1-dimensional torch.Tensor."):
+        v = torch.tensor([[2, 0, -1], [2, 0, -1]], dtype=torch.float64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_coeffs(v, mpoles)
+    with pytest.raises(TypeError, match="v must be a float tensor."):
+        v = torch.tensor([2, 0, -1], dtype=torch.int64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_coeffs(v, mpoles)
+    #mpoles is already tested with check_poles(mpoles) in mt_sys.py
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        v = torch.tensor([2, 0, -1], dtype=torch.float64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_coeffs(v, mpoles, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        v = torch.tensor([2, 0, -1], dtype=torch.float64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mtdr_coeffs(v, mpoles, eps=0.)
