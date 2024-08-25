@@ -112,7 +112,7 @@ def test_subsample():
     from .util import subsample, discretize_dr
     sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     x = discretize_dr(sample)
-    expected_result=torch.tensor([[0.000000-0.405495j, 0.000000-0.274911j, 0.000000-0.173307j, 0.000000-0.059357j, 0.041643+0.000000j, 0.183655+0.000000j, 0.392604+0.000000j]], dtype=torch.complex128)
+    expected_result=torch.tensor([0.000000-0.405495j, 0.000000-0.274911j, 0.000000-0.173307j, 0.000000-0.059357j, 0.041643+0.000000j, 0.183655+0.000000j, 0.392604+0.000000j], dtype=torch.complex128)
     assert torch.allclose(subsample(sample, x), expected_result)
 
     #input validation

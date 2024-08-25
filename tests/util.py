@@ -417,14 +417,14 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
         raise TypeError('y must be a torch.Tensor.')
     if y.ndim != 0:
         raise ValueError('y must be a single number.')
-    if y.dtype != torch.complex64:
+    if not y.is_complex():
         raise TypeError('y must be a complex number.')
 
     if not isinstance(z, torch.Tensor):
         raise TypeError('z must be a torch.Tensor.')
     if z.ndim != 0:
         raise ValueError('z must be a single number.')
-    if z.dtype != torch.complex64:
+    if not z.is_complex():
         raise TypeError('z must be a complex number.')
 
     check_poles(mpoles)
@@ -579,6 +579,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # torchinterp1d is used for linear interpolation
     # https://github.com/aliutkus/torchinterp1d
     y = interp1d(sx, sample, x)
+    y = y[0]
     return y
 
 

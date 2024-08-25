@@ -248,10 +248,13 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
         raise ValueError("Poles must be inside the unit disc")
 
     mpoles = torch.cat((torch.tensor([0.0]), mpoles))
+    #print(f"mpoles: {mpoles}")
     m = mpoles.size(0)
+    #print(f"m: {m}")
     stepnum = 2*(m-1) + 1
     #array of numbers ranging from -(m-1)*pi to (m-1)*pi, with pi as distance between each number
     z = torch.linspace(-(m-1)*torch.pi, (m-1)*torch.pi, steps=stepnum, dtype=torch.float64)
+    #print(f"z: {z}")
     z = z / m
     t = argdr_inv(mpoles, z, eps)
     return t
@@ -273,7 +276,7 @@ def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         Values of the complex dot product of 'F' and 'G' at 't'.
 
     Raises
@@ -414,14 +417,14 @@ def kernel(y:torch.Tensor,z:torch.Tensor,mpoles: torch.Tensor) -> torch.Tensor:
         raise TypeError('y must be a torch.Tensor.')
     if y.ndim != 0:
         raise ValueError('y must be a single number.')
-    if y.dtype != torch.complex64:
+    if not y.is_complex():
         raise TypeError('y must be a complex number.')
 
     if not isinstance(z, torch.Tensor):
         raise TypeError('z must be a torch.Tensor.')
     if z.ndim != 0:
         raise ValueError('z must be a single number.')
-    if z.dtype != torch.complex64:
+    if not z.is_complex():
         raise TypeError('z must be a complex number.')
 
     check_poles(mpoles)
@@ -576,6 +579,7 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # torchinterp1d is used for linear interpolation
     # https://github.com/aliutkus/torchinterp1d
     y = interp1d(sx, sample, x)
+    y = y[0]
     return y
 
 

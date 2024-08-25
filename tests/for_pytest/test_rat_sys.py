@@ -90,3 +90,37 @@ def test_mlf_coeffs():
         mlf_coeffs(v, mpoles)
     #mpoles is already tested with check_poles(mpoles) in rat_sys.py
     
+def test_mlfdc_coeffs():
+    from .rat_sys import mlfdc_coeffs
+    signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    co,err = mlfdc_coeffs(signal, mpoles)
+    err = torch.tensor(err)
+    expected_co = torch.tensor([-0.544583+-1.370364j,1.954605+3.459179j,-1.456189+-0.871082j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.080572)
+    assert torch.allclose(co, expected_co)
+    assert torch.allclose(err, expected_err)
+
+    #input validation
+    with pytest.raises(TypeError, match="signal must be a torch.Tensor."):
+        signal = [2j, 0, -2]
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_coeffs(signal, mpoles)
+    with pytest.raises(ValueError, match="signal must be a 1-dimensional torch.Tensor."):
+        signal = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_coeffs(signal, mpoles)
+    with pytest.raises(TypeError, match="signal must be a complex tensor."):
+        signal = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_coeffs(signal, mpoles)
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_coeffs(signal, mpoles, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        mlfdc_coeffs(signal, mpoles, eps=0.)

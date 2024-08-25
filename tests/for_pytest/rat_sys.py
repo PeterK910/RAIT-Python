@@ -85,9 +85,11 @@ def lf_system(length: int, poles: torch.Tensor) -> torch.Tensor:
     for j in range(poles.numel()):
         #print(f"j: {j}")
         rec = 1 / (1 - poles[j].conj() * z)
+        #print(f"rec: {rec}")
         lfs[j, :] = rec ** __multiplicity_local(j, poles)
+        #print(f"lfs[j, :]: {lfs[j, :]}")
         lfs[j, :] /= torch.sqrt(torch.dot(lfs[j, :], lfs[j, :].conj()) / length)
-
+        #print(f"lfs[j, :]: {lfs[j, :]}")
     return lfs
 
 def __multiplicity_local(n:int, v:torch.Tensor) -> int:
@@ -113,6 +115,8 @@ def __multiplicity_local(n:int, v:torch.Tensor) -> int:
         #print(f"__multiplicity_local: comparing {v[n]} with {v[k]}")
         if torch.allclose(v[n], v[k]):
             m += 1
+            #print(f"__multiplicity_local: found match at {k}-th element")
+    #print(f"__multiplicity_local: returning multiplicity of v[{n}] ({v[n]}) : {m}")
     return m
 
 def mlfdc_system(mpoles:torch.Tensor, eps:float=1e-6) -> torch.Tensor:
@@ -243,7 +247,7 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     """
 
     from .biort_sys import biort_system
-    from .util import check_poles
+    from .util import check_poles, conj_trans
     
     # Validate input parameters
     if not isinstance(v, torch.Tensor):
@@ -257,10 +261,6 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
 
     # Calculate biorthogonal system elements 
     bts = biort_system(v.size(0), poles)
-
-    #helper conjugate transpose function
-    def conj_trans(a:torch.Tensor) -> torch.Tensor:
-        return torch.conj(a).t()
     
     # Calculate Fourier coefficients
     co = conj_trans(torch.matmul(bts, conj_trans(v)) / v.size(0))
@@ -337,16 +337,16 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
 
     Parameters
     ----------
-    signal : torch.Tensor
-        An arbitrary vector (1-dimensional tensor).
-    mpoles : torch.Tensor
-        Poles of the modified basic rational system (1-dimensional tensor).
+    signal : torch.Tensor, dtype=torch.complex64
+        An arbitrary 1-dimensional tensor.
+    mpoles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system (1-dimensional tensor). Each pole must be inside the unit circle.
     eps : float, optional
         Accuracy of the discretization on the unit disc (default is 1e-6).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The Fourier coefficients of 'signal' with respect to the discrete 
         modified basic rational system defined by 'mpoles'.
     float
@@ -357,40 +357,52 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
     ValueError
         If input parameters are invalid.
     """
-    from blaschke import arg_inv
-    from util import subsample, dotdc
-    from biort_sys import biortdc_system
+    from .blaschke import arg_inv
+    from .util import subsample, dotdc, check_poles
+    from .biort_sys import biortdc_system
 
     # Validate input parameters
-    if not isinstance(signal, torch.Tensor) or signal.ndim != 1:
-        raise ValueError('Signal must be a 1-dimensional torch.Tensor.')
+    if not isinstance(signal, torch.Tensor):
+        raise TypeError('signal must be a torch.Tensor.')
+    if signal.ndim != 1:
+        raise ValueError('signal must be a 1-dimensional torch.Tensor.')
+    if not signal.is_complex():
+        raise TypeError('signal must be a complex tensor.')
     
-    if not isinstance(mpoles, torch.Tensor) or mpoles.ndim != 1:
-        raise ValueError('Mpoles must be a 1-dimensional torch.Tensor.')
+    check_poles(mpoles)
     
     if not isinstance(eps, float):
-        raise ValueError('Eps must be a float.')
-    
-    if torch.max(torch.abs(mpoles)) >= 1:
-        raise ValueError('Mpoles must be inside the unit circle!')
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Subsample signal and calculate coefficients
     m = mpoles.numel()
-    z = torch.linspace(-torch.pi, torch.pi, m + 1)
+    #substracting eps/1000 to avoid pi in linspace for arg_inv
+    z = torch.linspace(-torch.pi, torch.pi - eps/1000, m + 1, dtype=torch.float64)
     t = arg_inv(mpoles, z, eps)
     samples = subsample(signal, t)
+    #print(f"m:{m}")
+    #print(f"z:{z}")
+    #print(f"t:{t}")
+    #print(f"samples:{samples}")
     
-    co = torch.zeros(m)
+    co = torch.zeros(m, dtype=torch.complex64)
     bts = biortdc_system(mpoles, eps)
+    #print(f"co:{co}")
+    #print(f"bts:{bts}")
 
     for i in range(m):
         co[i] = dotdc(samples, bts[i], mpoles, t)
-
+    #print(f"co:{co}")
     # Calculate error
     len_signal = signal.numel()
     mlf = mlf_system(len_signal, mpoles)
+    #print(f"len_signal:{len_signal}")
+    #print(f"mlf:{mlf}")
     
     err = torch.linalg.norm(torch.matmul(co, mlf) - signal).item()
+    #print(f"err:{err}")
 
     return co, err
 
