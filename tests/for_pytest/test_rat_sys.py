@@ -124,3 +124,43 @@ def test_mlfdc_coeffs():
         signal = torch.tensor([2j, 0, -2], dtype=torch.complex64)
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mlfdc_coeffs(signal, mpoles, eps=0.)
+
+def test_mlf_generate():
+    from .rat_sys import mlf_generate
+
+    length=5
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    result = mlf_generate(length, poles, coeffs)
+    expected_result=torch.tensor([-0.533333+1.600000j,-0.447375+4.118871j,-3.922430+3.465461j,-3.140959+0.075202j,-1.340678+0.730709j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+
+    #input validation
+    #length
+    with pytest.raises(TypeError, match="length must be an integer."):
+        length=2.3
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mlf_generate(length, poles, coeffs)
+    with pytest.raises(ValueError, match="length must be greater than or equal to 2."):
+        length=1
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mlf_generate(length, poles, coeffs)
+    #poles is already tested with check_poles(poles) in rat_sys.py
+    #coeffs
+    with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = [2j, 0, -2]
+        mlf_generate(length, poles, coeffs)
+    with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mlf_generate(length, poles, coeffs)
+    with pytest.raises(TypeError, match="coeffs must be a complex tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mlf_generate(length, poles, coeffs)

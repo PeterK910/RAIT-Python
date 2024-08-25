@@ -173,14 +173,18 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the modified basic rational system (1D tensor).
-    coeffs : torch.Tensor
-        Coefficients of the linear combination to form (1D tensor).
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
+
+        Must have the same number of elements as 'coeffs'.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients of the linear combination to form (1-dimensional tensor).
+
+        Must have the same number of elements as 'poles'.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a 1D tensor.
 
         It is the linear combination of the discrete real MT system elements.
@@ -198,19 +202,22 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
     ValueError
         If input parameters are incorrect or if poles are outside the valid range.
     """
+    from .util import check_poles
     
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
-        raise ValueError('Parameter `length` must be an integer greater than or equal to 2.')
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(poles, torch.Tensor) or poles.dim() != 1:
-        raise ValueError('Parameter `poles` must be a 1D torch.Tensor.')
+    check_poles(poles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.dim() != 1 or poles.size(0) != coeffs.size(0):
-        raise ValueError('Parameter `coeffs` must be a 1D torch.Tensor with the same size as `poles`.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must have absolute values less than 1.')
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
 
     # Generate the modified rational system elements
     mlf_system_elements = mlf_system(length, poles)
