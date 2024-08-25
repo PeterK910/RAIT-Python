@@ -218,6 +218,10 @@ def mlf_generate(length:int , poles:torch.Tensor, coeffs:torch.Tensor) -> torch.
         raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
     if not coeffs.is_complex():
         raise TypeError('coeffs must be a complex tensor.')
+    
+    #coeffs must have the same number of elements as poles
+    if poles.size(0) != coeffs.size(0):
+        raise ValueError('poles and coeffs must have the same number of elements.')
 
     # Generate the modified rational system elements
     mlf_system_elements = mlf_system(length, poles)
@@ -287,14 +291,18 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the rational system (row vector).
-    coeffs : torch.Tensor
-        Coefficients of the linear combination to form (row vector).
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
+
+        Must have the same number of elements as 'coeffs'.
+    coeffs : torch.Tensor, dtype=torch.complex64
+        Coefficients of the linear combination to form (1-dimensional tensor).
+
+        Must have the same number of elements as 'poles'.
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a row vector.
     
         It is the linear combination of the LF system elements.
@@ -313,21 +321,27 @@ def lf_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
         If input parameters are invalid.
     """
     
+    from .util import check_poles
+    
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
-        raise ValueError('Length must be an integer greater than or equal to 2.')
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    check_poles(poles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
-        raise ValueError('Coefficients must be a 1-dimensional torch.Tensor.')
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
     
+    #coeffs must have the same number of elements as poles
     if poles.size(0) != coeffs.size(0):
-        raise ValueError('Poles and coefficients must have the same number of elements.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Pole values must be less than 1 in magnitude.')
+        raise ValueError('poles and coeffs must have the same number of elements.')
+
     
     # Generate the LF system elements
     lf_sys = lf_system(length, poles)
