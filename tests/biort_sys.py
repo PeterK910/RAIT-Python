@@ -289,7 +289,7 @@ def biort_coeffs(v: torch.Tensor, poles: torch.Tensor) -> tuple[torch.Tensor, fl
     
     co = conj_trans(torch.matmul(mlfs, conj_trans(v)) / v.size(0))
     
-    err = torch.linalg.norm(co @ bts - v).item()
+    err = torch.linalg.norm(co @ bts - v,).item()
     """
     print(f"mlfs = {mlfs}")
     print(f"bts = {bts}")
@@ -472,7 +472,7 @@ def biortdc_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> 
     # Calculate error
     len_v = len(v)
     bts = biort_system(len_v, mpoles)
-    err = torch.norm(co @ bts - v).item()
+    err = torch.linalg.norm(co @ bts - v).item()
 
     return co, err
 

@@ -267,7 +267,7 @@ def mlf_coeffs(v:torch.Tensor, poles:torch.Tensor) -> tuple[torch.Tensor, float]
     # Calculate modified rational system elements
     mlf = mlf_system(v.size(0), poles)
     # Calculate approximation error
-    err = torch.norm(torch.matmul(co.t(), mlf) - v)
+    err = torch.linalg.norm(torch.matmul(co.t(), mlf) - v)
 
 
     return co, err.item()

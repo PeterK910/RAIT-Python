@@ -409,7 +409,7 @@ def mtdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -
     # Calculate error
     len_signal = len(signal)
     mts = mt_system(len_signal, mpoles)
-    err = torch.norm(co @ mts - signal).item()
+    err = torch.linalg.norm(co @ mts - signal).item()
 
     return co.squeeze(), err
 
@@ -531,6 +531,6 @@ def mtdr_coeffs(v: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) -> tup
 
     SRf = mtdr_generate(len(v), mpoles, cUk, cVk)
     
-    err = torch.norm(SRf - v).item()
+    err = torch.linalg.norm(SRf - v).item()
 
     return cUk, cVk, err
