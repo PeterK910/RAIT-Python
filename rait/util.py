@@ -3,7 +3,11 @@ import math
 from scipy.signal.windows import tukey
 from scipy.signal import savgol_filter
 from matplotlib import pyplot as plt
-from torchinterp1d import interp1d
+
+# interp1d is used for linear interpolation
+# source: https://github.com/aliutkus/torchinterp1d
+# date of retrieval: 2024.08.25
+from .misc.interp1d import interp1d
 
 def conj_trans(v: torch.Tensor) -> torch.Tensor:
     """
@@ -574,8 +578,6 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     # Create a tensor of sample points
     sx = torch.linspace(-torch.pi, torch.pi, len)
 
-    # torchinterp1d is used for linear interpolation
-    # https://github.com/aliutkus/torchinterp1d
     y = interp1d(sx, sample, x)
     y = y[0]
     return y
