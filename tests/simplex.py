@@ -142,12 +142,14 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
 
 def periodize_poles(p: torch.Tensor, m: int) -> torch.Tensor:
     """
+    NOTE: This function is unnecessary in python, as torch.repeat already exists. It is kept for compatibility with the original code.
+
     Duplicates periodically the elements of 'p' 'm' times.
 
     Parameters
     ----------
     p : torch.Tensor
-        A row vector that contains the poles.
+        A 1-dimensional tensor that contains the poles.
     m : int
         Integer factor of duplication.
 
@@ -166,8 +168,8 @@ def periodize_poles(p: torch.Tensor, m: int) -> torch.Tensor:
     if not isinstance(p, torch.Tensor) or p.ndim != 1:
         raise ValueError('p must be a 1-dimensional torch.Tensor.')
     
-    if not isinstance(m, int) or m < 1:
-        raise ValueError('m must be a positive integer.')
+    if not isinstance(m, int) or m < 0:
+        raise ValueError('m must be a non-negative integer.')
 
     # Duplicate the poles 'm' times
     pp = p.repeat(m)
