@@ -1,6 +1,7 @@
 # RAIT-Python
 ## Python implementation of RAIT library
 Python >= 3.9 recommended, as there are type hints with tuples
+
 Requires Pytorch >= 2.3 (likely runs on lower versions, though untested)
 
 ## Presentation
