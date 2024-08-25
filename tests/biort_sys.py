@@ -417,7 +417,7 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     
     #coeffs must have the same number of elements as poles
     if mpoles.size(0) != coeffs.size(0):
-        raise ValueError('poles and coeffs must have the same number of elements.')
+        raise ValueError('mpoles and coeffs must have the same number of elements.')
 
     # Calculate the biorthogonal system elements
     bts = biort_system(length, mpoles)

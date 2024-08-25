@@ -251,3 +251,48 @@ def test_mtdr_coeffs():
         v = torch.tensor([2, 0, -1], dtype=torch.float64)
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         mtdr_coeffs(v, mpoles, eps=0.)
+
+def test_mt_generate():
+    from .mt_sys import mt_generate
+    length=5
+    poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+    coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+    result = mt_generate(length, poles, coeffs)
+    expected_result = torch.tensor([-0.000000+2.309401j,0.865771+1.651865j,-3.094895+3.475989j,1.397230+-0.688440j,1.077684+2.166189j], dtype=torch.complex64)
+    assert torch.allclose(result, expected_result)
+
+    #input validation
+    #length
+    with pytest.raises(TypeError, match="length must be an integer."):
+        length=2.3
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mt_generate(length, poles, coeffs)
+    with pytest.raises(ValueError, match="length must be greater than or equal to 2."):
+        length=1
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mt_generate(length, poles, coeffs)
+    #poles is already tested with check_poles(poles) in rat_sys.py
+    #coeffs
+    with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = [2j, 0, -2]
+        mt_generate(length, poles, coeffs)
+    with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
+        mt_generate(length, poles, coeffs)
+    with pytest.raises(TypeError, match="coeffs must be a complex tensor."):
+        length=5
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2, 0, -2], dtype=torch.float32)
+        mt_generate(length, poles, coeffs)
+    #coeffs and poles do not have the same length
+    with pytest.raises(ValueError, match="poles and coeffs must have the same number of elements."):
+        length=5
+        poles = torch.tensor([-0.5j, 0], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mt_generate(length, poles, coeffs)

@@ -336,14 +336,14 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
     ----------
     length : int
         Number of points in case of uniform sampling.
-    poles : torch.Tensor
-        Poles of the rational system (1-dimensional tensor).
-    coeffs : torch.Tensor
+    poles : torch.Tensor, dtype=torch.complex64
+        Poles of the rational system (1-dimensional tensor). Must be inside the unit circle.
+    coeffs : torch.Tensor, dtype=torch.complex64
         Coefficients of the linear combination to form (1-dimensional tensor).
 
     Returns
     -------
-    torch.Tensor
+    torch.Tensor, dtype=torch.complex64
         The generated function at the uniform sampling points as a 1-dimensional tensor.
 
         It is the linear combination of the MT system elements.
@@ -362,21 +362,26 @@ def mt_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> torch
         If input parameters are invalid.
     """
 
+    from .util import check_poles
+    
     # Validate input parameters
-    if not isinstance(length, int) or length < 2:
-        raise ValueError('Length must be an integer greater than or equal to 2.')
+    if not isinstance(length, int):
+        raise TypeError('length must be an integer.')
+    if length < 2:
+        raise ValueError('length must be greater than or equal to 2.')
     
-    if not isinstance(poles, torch.Tensor) or poles.ndim != 1:
-        raise ValueError('Poles must be a 1-dimensional torch.Tensor.')
+    check_poles(poles)
     
-    if not isinstance(coeffs, torch.Tensor) or coeffs.ndim != 1:
-        raise ValueError('Coeffs must be a 1-dimensional torch.Tensor.')
+    if not isinstance(coeffs, torch.Tensor):
+        raise TypeError('coeffs must be a torch.Tensor.')
+    if coeffs.ndim != 1:
+        raise ValueError('coeffs must be a 1-dimensional torch.Tensor.')
+    if not coeffs.is_complex():
+        raise TypeError('coeffs must be a complex tensor.')
     
-    if poles.shape[0] != coeffs.shape[0]:
-        raise ValueError('Poles and coeffs must have the same number of elements.')
-    
-    if torch.max(torch.abs(poles)) >= 1:
-        raise ValueError('Poles must be inside the unit circle!')
+    #coeffs must have the same number of elements as poles
+    if poles.size(0) != coeffs.size(0):
+        raise ValueError('poles and coeffs must have the same number of elements.')
 
     # Calculate the MT system elements
     mt_sys = mt_system(length, poles)

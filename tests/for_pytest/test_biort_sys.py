@@ -189,8 +189,8 @@ def test_biortdc_generate():
         coeffs = torch.tensor([2, 0, -2], dtype=torch.float32)
         biortdc_generate(length, mpoles, coeffs)
     #coeffs and poles do not have the same length
-    with pytest.raises(ValueError, match="poles and coeffs must have the same number of elements."):
+    with pytest.raises(ValueError, match="mpoles and coeffs must have the same number of elements."):
         length=5
-        poles = torch.tensor([-0.5j, 0], dtype=torch.complex64)
+        mpoles = torch.tensor([-0.5j, 0], dtype=torch.complex64)
         coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        biortdc_generate(length, poles, coeffs)
+        biortdc_generate(length, mpoles, coeffs)
