@@ -10,7 +10,7 @@ Requires Spicy (for binom)
 
 ## Presentation
 
-This repository implements the RAIT matlab library
+This repository implements the RAIT matlab library using Pytorch for GPU compatibility (instead of numpy)
 
 ## Known issues
 ### Overinstallation
