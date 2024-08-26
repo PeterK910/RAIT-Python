@@ -20,7 +20,7 @@ setup(
     long_description_content_type='text/markdown',
     packages=find_packages(),
     install_requires=[
-        'torch>=2.3',
+        #TODO: Add dependencies here
     ],
     author="Thac Bach Nguyen",
 )

@@ -74,7 +74,6 @@ def test_multiplicity():
 
 def test_kernel():
     from rait.util import kernel
-    #TODO: type specification of y and z
     #when y and z are equal
     y=torch.tensor(-1j, dtype=torch.complex64)
     z=torch.tensor(-1j, dtype=torch.complex64)
