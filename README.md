@@ -43,9 +43,14 @@ Type `pip install -e .` in the root folder of this repo.
 
 ## Testing
 
-`pip install pytest`
+`pip install pytest` if pytest is not installed
 
-`python -m pytest`
+`python -m pytest` in the root folder of this repo.
+
+## FAQ
+### How to know the dependencies of the functions in the matlab version?
+
+Install the 30-day free trial version of Matlab, and use the [dependency analyzer](https://www.mathworks.com/help/matlab/ref/dependencyanalyzer-app.html) function on the matlab version's folder. If you run out of time, you can always create a new account for another 30 days
 
 
 
