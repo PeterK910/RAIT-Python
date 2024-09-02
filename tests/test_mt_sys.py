@@ -299,45 +299,39 @@ def test_mt_generate():
 
 def test_mtdc_generate():
     from rait.mt_sys import mtdc_generate
-    length=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-    result = mtdc_generate(length, mpoles, coeffs)
-    expected_result = torch.tensor([-0.000000+2.309401j,0.865771+1.651865j,-3.094895+3.475989j,1.397230+-0.688440j,1.077684+2.166189j], dtype=torch.complex64)
+    result = mtdc_generate(mpoles, coeffs)
+    expected_result = torch.tensor([0.000000+2.309401j,0.298924+4.273503j,-0.285340+-1.902971j,0.000001+2.309402j], dtype=torch.complex64)
     assert torch.allclose(result, expected_result)
 
     #input validation
-    #length
-    with pytest.raises(TypeError, match="length must be an integer."):
-        length=2.3
-        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        mtdc_generate(length, mpoles, coeffs)
-    with pytest.raises(ValueError, match="length must be greater than or equal to 2."):
-        length=1
-        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        mtdc_generate(length, mpoles, coeffs)
-    #poles is already tested with check_poles(poles) in rat_sys.py
+    
+    #mpoles is already tested with check_poles(mpoles) in mt_sys.py
     #coeffs
     with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = [2j, 0, -2]
-        mtdc_generate(length, mpoles, coeffs)
+        mtdc_generate(mpoles, coeffs)
     with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
-        mtdc_generate(length, mpoles, coeffs)
+        mtdc_generate(mpoles, coeffs)
     with pytest.raises(TypeError, match="coeffs must be a complex tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = torch.tensor([2, 0, -2], dtype=torch.float32)
-        mtdc_generate(length, mpoles, coeffs)
+        mtdc_generate(mpoles, coeffs)
     #coeffs and poles do not have the same length
     with pytest.raises(ValueError, match="mpoles and coeffs must have the same number of elements."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0], dtype=torch.complex64)
         coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        mtdc_generate(length, mpoles, coeffs)
+        mtdc_generate(mpoles, coeffs)
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mtdc_generate(mpoles, coeffs, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        mtdc_generate(mpoles, coeffs, eps=0.)
