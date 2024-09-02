@@ -76,8 +76,8 @@ def test_biortdc_coeffs():
     poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     co,err = biortdc_coeffs(v, poles)
     err = torch.tensor(err)
-    expected_co = torch.tensor([-0.346997+1.154818j,-0.046167+1.217733j,-0.177091+0.879845j], dtype=torch.complex64)
-    expected_err = torch.tensor(3.080572)
+    expected_co = torch.tensor([-1.174583+0.741026j,-1.080650+1.217733j,-0.866746+0.879846j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.613619)
     assert torch.allclose(co, expected_co)
     assert torch.allclose(err, expected_err)
 

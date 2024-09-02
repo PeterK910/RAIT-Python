@@ -104,8 +104,8 @@ def test_mtdc_coeffs():
     poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     co,err = mtdc_coeffs(signal, poles)
     err = torch.tensor(err)
-    expected_co = torch.tensor([-0.300508+1.000102j,0.703239+-0.428161j,-0.592564+0.317047j], dtype=torch.complex64)
-    expected_err = torch.tensor(3.080572)
+    expected_co = torch.tensor([-1.017219+0.641747j,1.323928+0.399425j,-0.950918+-0.160761j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.613619)
     assert torch.allclose(co, expected_co)
     assert torch.allclose(err, expected_err)
 

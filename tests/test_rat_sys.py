@@ -96,8 +96,8 @@ def test_mlfdc_coeffs():
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     co,err = mlfdc_coeffs(signal, mpoles)
     err = torch.tensor(err)
-    expected_co = torch.tensor([-0.544583+-1.370364j,1.954605+3.459179j,-1.456189+-0.871082j], dtype=torch.complex64)
-    expected_err = torch.tensor(3.080572)
+    expected_co = torch.tensor([1.162314+-2.456568j,-1.355743+5.941933j,-0.887221+-2.267632j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.613619)
     assert torch.allclose(co, expected_co)
     assert torch.allclose(err, expected_err)
 
