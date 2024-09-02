@@ -138,6 +138,12 @@ def test_subsample():
         sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         x = torch.tensor([1.0+1j, 2.0, 3.0])
         subsample(sample, x)
+    regex = re.compile(re.escape('x must be in the range [-pi, pi).'))
+    with pytest.raises(ValueError, match=regex):
+        sample = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        x = torch.tensor([-4.0, 2.0, 3.0])
+        subsample(sample, x)
+    
 
 def test_dotdc():
     from rait.util import dotdc
@@ -207,6 +213,13 @@ def test_dotdc():
         G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         t = torch.tensor([-1.0j, 2.0])
+        dotdc(F, G, poles, t)
+    regex = re.compile(re.escape('t must be in the range [-pi, pi).'))
+    with pytest.raises(ValueError, match=regex):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([-4.0, 2.0])
         dotdc(F, G, poles, t)
 
     #F and G and t have different lengths
@@ -300,6 +313,13 @@ def test_dotdr():
         G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
         poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         t = torch.tensor([-1.0j, 2.0])
+        dotdr(F, G, poles, t)
+    regex = re.compile(re.escape('t must be in the range [-pi, pi).'))
+    with pytest.raises(ValueError, match=regex):
+        F = torch.tensor([2*torch.pi, torch.pi], dtype=torch.complex64)
+        G = torch.tensor([-2j*torch.pi, -1j*torch.pi], dtype=torch.complex64)
+        poles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        t = torch.tensor([-4.0, 2.0])
         dotdr(F, G, poles, t)
 
     #F and G and t have different lengths

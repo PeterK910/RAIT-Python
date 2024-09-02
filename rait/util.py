@@ -261,7 +261,6 @@ def discretize_dr(mpoles: torch.Tensor, eps: float=1e-6) -> torch.Tensor:
 def dotdc(F: torch.Tensor, G: torch.Tensor, poles: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Computes complex discrete dot product of two functions in H^2(ID).
-    TODO: F and G are expected to have the same number of elements, AND at least 2.
 
     Parameters
     ----------
@@ -544,12 +543,9 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     sample : torch.Tensor, dtype=torch.complex64
-        A 1D tensor of (?) uniformly sampled values on (?) [-pi, pi). 
-        
-        TODO: This is likely not the case. in test.m, e.g. when calling biortdc_coeffs, the value "sig" is complex, and not seemingly uniform, and not within [-pi, pi)
-        Despite this, it is still used as an input to this function.
+        Values of "the function" at uniform sampling points. 1D tensor.
     x : torch.Tensor, dtype=torch.float64
-        The values at which interpolation is to be computed. 1D tensor.
+        The values at which interpolation is to be computed. 1D tensor. Values must be between [-pi, pi).
 
     Returns
     -------
@@ -572,6 +568,8 @@ def subsample(sample:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
         raise ValueError('x must be a 1-dimensional torch.Tensor.')
     if not x.is_floating_point():
         raise TypeError('x must have real elements.')
+    if torch.min(x) < -torch.pi or torch.max(x) >= torch.pi:
+        raise ValueError('x must be in the range [-pi, pi).')
 
     # Number of samples
     len = sample.size(0)
