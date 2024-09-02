@@ -76,8 +76,8 @@ def test_biortdc_coeffs():
     poles = torch.tensor([-0.5j,0,0.5], dtype=torch.complex64)
     co,err = biortdc_coeffs(v, poles)
     err = torch.tensor(err)
-    expected_co = torch.tensor([-0.346997+1.154818j,-0.046167+1.217733j,-0.177091+0.879845j], dtype=torch.complex64)
-    expected_err = torch.tensor(3.080572)
+    expected_co = torch.tensor([-1.174583+0.741026j,-1.080650+1.217733j,-0.866746+0.879846j], dtype=torch.complex64)
+    expected_err = torch.tensor(3.613619)
     assert torch.allclose(co, expected_co)
     assert torch.allclose(err, expected_err)
 
@@ -152,45 +152,39 @@ def test_biort_generate():
         
 def test_biortdc_generate():
     from rait.biort_sys import biortdc_generate
-    length=5
     mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
     coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-    result = biortdc_generate(length, mpoles, coeffs)
-    expected_result = torch.tensor([3.200000+-0.600000j,1.900022+4.552000j,-2.254179+2.161684j,-2.972920+-3.315897j,1.291600+-2.805769j], dtype=torch.complex64)
+    result = biortdc_generate(mpoles, coeffs)
+    expected_result = torch.tensor([3.200000+-0.600000j,-2.171179+3.157642j,-4.628821+-1.757640j,3.199998+-0.600003j], dtype=torch.complex64)
     assert torch.allclose(result, expected_result)
 
     #input validation
-    #length
-    with pytest.raises(TypeError, match="length must be an integer."):
-        length=2.3
-        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        biortdc_generate(length, mpoles, coeffs)
-    with pytest.raises(ValueError, match="length must be greater than or equal to 2."):
-        length=1
-        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
-        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        biortdc_generate(length, mpoles, coeffs)
-    #poles is already tested with check_poles(poles) in rat_sys.py
+
+    #mpoles is already tested with check_poles(mpoles) in rat_sys.py
     #coeffs
     with pytest.raises(TypeError, match="coeffs must be a torch.Tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = [2j, 0, -2]
-        biortdc_generate(length, mpoles, coeffs)
+        biortdc_generate(mpoles, coeffs)
     with pytest.raises(ValueError, match="coeffs must be a 1-dimensional torch.Tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = torch.tensor([[2j, 0, -2], [2j, 0, -2]], dtype=torch.complex64)
-        biortdc_generate(length, mpoles, coeffs)
+        biortdc_generate(mpoles, coeffs)
     with pytest.raises(TypeError, match="coeffs must be a complex tensor."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
         coeffs = torch.tensor([2, 0, -2], dtype=torch.float32)
-        biortdc_generate(length, mpoles, coeffs)
+        biortdc_generate(mpoles, coeffs)
     #coeffs and poles do not have the same length
     with pytest.raises(ValueError, match="mpoles and coeffs must have the same number of elements."):
-        length=5
         mpoles = torch.tensor([-0.5j, 0], dtype=torch.complex64)
         coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
-        biortdc_generate(length, mpoles, coeffs)
+        biortdc_generate(mpoles, coeffs)
+    #eps
+    with pytest.raises(TypeError, match="eps must be a float."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        biortdc_generate(mpoles, coeffs, eps=1)
+    with pytest.raises(ValueError, match="eps must be a positive float."):
+        mpoles = torch.tensor([-0.5j, 0, 0.5], dtype=torch.complex64)
+        coeffs = torch.tensor([2j, 0, -2], dtype=torch.complex64)
+        biortdc_generate(mpoles, coeffs, eps=0.)

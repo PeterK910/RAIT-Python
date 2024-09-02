@@ -86,9 +86,9 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    p : torch.Tensor
+    p : torch.Tensor, dtype=complex64
         Row vector that contains a pole only once.
-    m : torch.Tensor
+    m : torch.Tensor, dtype=int64
         Multiplicities related to the pole vector 'p'.
 
     Returns
@@ -129,6 +129,10 @@ def multiply_poles(p: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
             #print(f"unique poles gained a pole, current value: {unique_poles}")
     if unique_poles.numel() != p.numel():
         raise ValueError('Poles in p must be unique.')
+    
+    # In case p containse only one element and m = [1], return p
+    if p.numel() == 1 and m[0] == 1:
+        return p
 
     n = p.size(0)
     pp = torch.zeros((1, int(m.sum())), dtype=p.dtype)

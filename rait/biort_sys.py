@@ -355,20 +355,18 @@ def biort_generate(length: int, poles: torch.Tensor, coeffs: torch.Tensor) -> to
     
     return v
 
-def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+def biortdc_generate(mpoles: torch.Tensor, coeffs: torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
     Generates a function in the space spanned by the discrete biorthogonal system.
 
-    TODO: The function uses biort_system() instead of biortdc_system() to calculate the biorthogonal system elements. Verify if this is intended.
-
     Parameters
     ----------
-    length : int
-        Number of points in case of uniform sampling.
     mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the biorthogonal system (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor, dtype=torch.complex64
         Complex coefficients of the linear combination to form (1-dimensional tensor).
+    eps : float, optional
+        Accuracy of the discretization on the unit disc. Default is 1e-6.
 
     Returns
     -------
@@ -394,11 +392,6 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     from .util import check_poles
     
     # Validate input parameters
-    if not isinstance(length, int):
-        raise TypeError('length must be an integer.')
-    if length < 2:
-        raise ValueError('length must be greater than or equal to 2.')
-    
     check_poles(mpoles)
     
     if not isinstance(coeffs, torch.Tensor):
@@ -408,12 +401,17 @@ def biortdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) ->
     if not coeffs.is_complex():
         raise TypeError('coeffs must be a complex tensor.')
     
-    #coeffs must have the same number of elements as poles
+    #coeffs must have the same number of elements as mpoles
     if mpoles.size(0) != coeffs.size(0):
         raise ValueError('mpoles and coeffs must have the same number of elements.')
+    
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Calculate the biorthogonal system elements
-    bts = biort_system(length, mpoles)
+    bts = biortdc_system(mpoles,eps)
     
     # Calculate the linear combination of the discrete biorthogonal system elements
     v = coeffs @ bts

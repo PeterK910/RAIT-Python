@@ -404,20 +404,18 @@ def mlfdc_coeffs(signal: torch.Tensor, mpoles: torch.Tensor, eps: float = 1e-6) 
 
     return co, err
 
-def mlfdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> torch.Tensor:
+def mlfdc_generate(mpoles: torch.Tensor, coeffs: torch.Tensor, eps:float=1e-6) -> torch.Tensor:
     """
     Generates a function in the space spanned by the discrete modified basic rational function system.
 
-    TODO: The function uses mlf_system() instead of mlfdc_system() to generate the modified basic rational function system elements. Verify if this is intended.
-
     Parameters
     ----------
-    length : int
-        Number of points in case of uniform sampling.
     mpoles : torch.Tensor, dtype=torch.complex64
         Poles of the discrete modified basic rational system (1-dimensional tensor). Must be inside the unit circle.
     coeffs : torch.Tensor, dtype=torch.complex64
         Coefficients of the linear combination to form (1-dimensional tensor).
+    eps : float, optional
+        Accuracy of the discretization on the unit disc. Default is 1e-6.
 
     Returns
     -------
@@ -443,11 +441,6 @@ def mlfdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> t
     from .util import check_poles
     
     # Validate input parameters
-    if not isinstance(length, int):
-        raise TypeError('length must be an integer.')
-    if length < 2:
-        raise ValueError('length must be greater than or equal to 2.')
-    
     check_poles(mpoles)
     
     if not isinstance(coeffs, torch.Tensor):
@@ -460,9 +453,14 @@ def mlfdc_generate(length: int, mpoles: torch.Tensor, coeffs: torch.Tensor) -> t
     #coeffs must have the same number of elements as mpoles
     if mpoles.size(0) != coeffs.size(0):
         raise ValueError('mpoles and coeffs must have the same number of elements.')
+    
+    if not isinstance(eps, float):
+        raise TypeError('eps must be a float.')
+    if eps <= 0:
+        raise ValueError('eps must be a positive float.')
 
     # Generate the function
-    mlf = mlf_system(length, mpoles)
+    mlf = mlfdc_system(mpoles,eps)
     
     v = coeffs @ mlf
 
