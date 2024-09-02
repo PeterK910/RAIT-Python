@@ -110,7 +110,7 @@ def __mt_arrange(t: torch.Tensor) -> torch.Tensor:
     """
 
     mt = t.size(0)
-    ta = torch.zeros_like(t)
+    ta = torch.zeros_like(t, dtype=torch.complex64)
     ta[0] = t[0]
     
     for i in range(1, mt // 2):
