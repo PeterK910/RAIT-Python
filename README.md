@@ -54,7 +54,7 @@ Type `pip install -e .` in the root folder of this repo.
 Install the 30-day free trial version of Matlab, and use the [dependency analyzer](https://www.mathworks.com/help/matlab/ref/dependencyanalyzer-app.html) function on the matlab version's folder. If you run out of time, you can always create a new account for another 30 days
 
 ## License
-Copyright 2024 [copyright holder]
+Copyright 2024 Dr. Péter Kovács
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
