@@ -32,7 +32,7 @@ Functions starting with simplex:
 - simplex_mtdc
 - simplex_mtdr
 
-### License is also missing
+### License copyright holder name is also missing
 
 ## Installation
 
@@ -44,12 +44,25 @@ Type `pip install -e .` in the root folder of this repo.
 
 `python -m pytest` in the root folder of this repo.
 
+## References
+> [1] [Kovács, P., Lócsi, L., RAIT: The Rational Approximation and Interpolation Toolbox for MATLAB, Proceedings of the 35th International Conference on Telecommunication and Signal Processing (TSP), 2012, pp. 671-677.](http://dx.doi.org/10.11601/ijates.v1i2-3.18) 
+
+
 ## FAQ
 ### How to know the dependencies of the functions in the matlab version?
 
 Install the 30-day free trial version of Matlab, and use the [dependency analyzer](https://www.mathworks.com/help/matlab/ref/dependencyanalyzer-app.html) function on the matlab version's folder. If you run out of time, you can always create a new account for another 30 days
 
+## License
+Copyright <2024> <copyright holder>
 
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 
 
